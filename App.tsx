@@ -416,7 +416,11 @@ function App() {
 
   // 监听认证状态变化
   useEffect(() => {
+    let isMounted = true;
+    
     const authSubscription = subscribeToAuthChanges((user) => {
+      if (!isMounted) return;
+      
       setUser(user);
       setIsAuthLoading(false);
       if (user) {
@@ -428,7 +432,18 @@ function App() {
       }
     });
 
+    // 设置超时，确保即使认证状态订阅失败，页面也不会一直显示加载中
+    const timeoutId = setTimeout(() => {
+      if (isMounted && isAuthLoading) {
+        console.warn('Auth loading timeout, forcing to login view');
+        setIsAuthLoading(false);
+        setCurrentView('login');
+      }
+    }, 3000);
+
     return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
       authSubscription.unsubscribe();
     };
   }, []);
