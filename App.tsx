@@ -2304,7 +2304,7 @@ function App() {
 
       {/* Sidebar Navigation */}
       <div className="w-full md:w-64 bg-white border-r border-slate-200 p-4 sticky top-0 h-screen overflow-y-auto hidden md:block">
-        <h1 className="text-xl font-bold text-slate-800 mb-6">InvoiceFlow</h1>
+        <h1 className="text-xl font-bold text-slate-800 mb-6">发票管理系统</h1>
         
         {/* Navigation Links */}
         <nav className="space-y-1">
@@ -2350,37 +2350,37 @@ function App() {
         </nav>
         
         {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-sm font-semibold text-slate-500 mb-3">快捷操作</h2>
-          <div className="space-y-2">
-            <button onClick={handleOpenAddStore} className="w-full flex items-center gap-3 p-3 rounded-lg text-left bg-green-50 text-green-700 hover:bg-green-100">
-              <Plus size={20} />
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-slate-500 mb-2">快捷操作</h2>
+          <div className="space-y-1">
+            <button onClick={handleOpenAddStore} className="w-full flex items-center gap-2 p-2 rounded-lg text-left bg-green-50 text-green-700 hover:bg-green-100">
+              <Plus size={16} />
               <span>新增店铺</span>
             </button>
-            <button onClick={handleOpenAddSupplier} className="w-full flex items-center gap-3 p-3 rounded-lg text-left bg-blue-50 text-blue-700 hover:bg-blue-100">
-              <Plus size={20} />
+            <button onClick={handleOpenAddSupplier} className="w-full flex items-center gap-2 p-2 rounded-lg text-left bg-blue-50 text-blue-700 hover:bg-blue-100">
+              <Plus size={16} />
               <span>新增工厂</span>
             </button>
-            <button onClick={handleRestoreData} className="w-full flex items-center gap-3 p-3 rounded-lg text-left bg-amber-50 text-amber-700 hover:bg-amber-100">
-              <RefreshCw size={20} />
+            <button onClick={handleRestoreData} className="w-full flex items-center gap-2 p-2 rounded-lg text-left bg-amber-50 text-amber-700 hover:bg-amber-100">
+              <RefreshCw size={16} />
               <span>恢复数据</span>
             </button>
           </div>
         </div>
         
-        {/* Current Quarter Info */}
-        <div className="mt-8 bg-indigo-50 p-4 rounded-lg">
-          <h2 className="text-sm font-semibold text-indigo-700 mb-2">当前季度</h2>
-          <p className="text-2xl font-bold text-indigo-900">{currentQuarter}</p>
-          <div className="mt-2 text-xs text-indigo-600">
-            <div className="flex justify-between mb-1">
-              <span>已开票总额:</span>
-              <span className="font-medium">¥{totalInvoiced.toLocaleString()}</span>
+        {/* User Info */}
+        <div className="mt-auto pt-4 border-t border-slate-200">
+          <div className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+              <User size={16} />
             </div>
-            <div className="flex justify-between">
-              <span>待抵扣缺口:</span>
-              <span className="font-medium">¥{totalGap.toLocaleString()}</span>
+            <div>
+              <p className="text-sm font-medium text-slate-800">{user?.user_metadata?.username || '用户'}</p>
+              <p className="text-xs text-slate-500">{user?.user_metadata?.level || '普通用户'}</p>
             </div>
+            <button onClick={handleLogout} className="ml-auto text-slate-400 hover:text-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 21 6-6-6-6"/><path d="M21 12H5"/></svg>
+            </button>
           </div>
         </div>
       </div>
