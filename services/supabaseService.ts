@@ -180,12 +180,19 @@ export const getCurrentUser = (): any => {
 export const subscribeToAuthChanges = (callback: (user: any) => void) => {
   if (!isSupabaseConfigured()) {
     console.warn('Supabase not configured, calling callback with null user');
-    callback(null);
+    setTimeout(() => callback(null), 0);
     return { unsubscribe: () => {} };
   }
   
   try {
     const client = getSupabaseClient();
+    
+    client.auth.getSession().then(({ data: { session } }) => {
+      callback(session?.user || null);
+    }).catch((error) => {
+      console.error('Failed to get session:', error);
+      callback(null);
+    });
     
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       callback(session?.user || null);
@@ -194,7 +201,7 @@ export const subscribeToAuthChanges = (callback: (user: any) => void) => {
     return subscription;
   } catch (error) {
     console.error('Failed to subscribe to auth changes:', error);
-    callback(null);
+    setTimeout(() => callback(null), 0);
     return { unsubscribe: () => {} };
   }
 };
