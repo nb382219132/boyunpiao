@@ -1146,21 +1146,20 @@ export const createAdminAccount = async (): Promise<{ user: any; error: any }> =
     const password = '9fJ3GzEIjNPkqsNz';
     const email = `${username}@example.com`;
     
-    // 尝试登录检查管理员账号是否已存在
-    const { data: signInData, error: signInError } = await client.auth.signInWithPassword({
-      email,
-      password
-    });
+    // 使用管理员API检查用户是否存在，而不是登录
+    const { data: users, error: usersError } = await client
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .limit(1);
     
-    // 如果登录成功，说明管理员账号已存在
-    if (signInData?.user) {
+    // 如果用户已存在，直接返回
+    if (users && users.length > 0) {
       console.log('Admin account already exists');
-      // 登出，因为这只是检查
-      await client.auth.signOut();
-      return { user: signInData.user, error: null };
+      return { user: users[0], error: null };
     }
     
-    // 如果登录失败，尝试创建管理员账号
+    // 如果用户不存在，尝试创建管理员账号
     console.log('Creating admin account...');
     const { data, error } = await client.auth.signUp({
       email,
