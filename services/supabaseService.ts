@@ -1137,32 +1137,33 @@ export const createAdminAccount = async (): Promise<{ user: any; error: any }> =
     const password = '9fJ3GzEIjNPkqsNz';
     const email = `${username}@example.com`;
     
-    // 检查管理员账号是否已存在
-    const { data: existingUsers, error: checkError } = await client.auth.admin.listUsers({
-      email: email
+    // 尝试登录检查管理员账号是否已存在
+    const { data: signInData, error: signInError } = await client.auth.signInWithPassword({
+      email,
+      password
     });
     
-    if (checkError) {
-      console.error('Error checking admin account:', checkError);
-      return { user: null, error: checkError };
-    }
-    
-    // 如果管理员账号已存在，直接返回
-    if (existingUsers.users.length > 0) {
+    // 如果登录成功，说明管理员账号已存在
+    if (signInData?.user) {
       console.log('Admin account already exists');
-      return { user: existingUsers.users[0], error: null };
+      // 登出，因为这只是检查
+      await client.auth.signOut();
+      return { user: signInData.user, error: null };
     }
     
-    // 创建管理员账号
-    const { data, error } = await client.auth.admin.createUser({
-      email: email,
-      password: password,
-      user_metadata: {
-        username: username,
-        status: 'active', // 管理员账号直接激活
-        role: 'admin', // 设置为管理员角色
-        level: 'advanced', // 管理员等级为高级
-        platforms: [] // 管理员无平台限制
+    // 如果登录失败，尝试创建管理员账号
+    console.log('Creating admin account...');
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: username,
+          status: 'active',
+          role: 'admin',
+          level: 'advanced',
+          platforms: []
+        }
       }
     });
     
@@ -1172,7 +1173,7 @@ export const createAdminAccount = async (): Promise<{ user: any; error: any }> =
     }
     
     console.log('Admin account created successfully');
-    return { user: data.user, error: null };
+    return { user: data?.user, error: null };
   } catch (error) {
     console.error('Failed to create admin account:', error);
     return { user: null, error };
