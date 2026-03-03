@@ -56,7 +56,8 @@ import {
   Shield,
   Calendar,
   FileText,
-  RefreshCw
+  RefreshCw,
+  Settings
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
@@ -2318,22 +2319,28 @@ function App() {
       {/* --- MAIN CONTENT --- */}
 
       {/* Sidebar Navigation */}
-      <div className="w-full md:w-64 bg-white border-r border-slate-200 p-4 sticky top-0 h-screen overflow-y-auto hidden md:block">
-        <h1 className="text-xl font-bold text-slate-800 mb-6">发票管理系统</h1>
+      <div className="w-full md:w-64 bg-slate-900 p-4 sticky top-0 h-screen overflow-y-auto hidden md:block flex flex-col">
+        {/* Logo and Quarter */}
+        <div className="flex items-center gap-2 mb-8">
+          <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          </div>
+          <span className="text-xl font-bold text-white">{currentQuarter}</span>
+        </div>
         
         {/* Navigation Links */}
-        <nav className="space-y-1">
+        <nav className="space-y-1 flex-1">
           <button 
             onClick={() => setCurrentView('dashboard')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'dashboard' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'dashboard' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
           >
             <LayoutDashboard size={20} />
-            <span>仪表盘</span>
+            <span>数据总览</span>
           </button>
           
           <button 
             onClick={() => setCurrentView('stores')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'stores' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'stores' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
           >
             <Store size={20} />
             <span>店铺管理</span>
@@ -2341,62 +2348,53 @@ function App() {
           
           <button 
             onClick={() => setCurrentView('suppliers')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'suppliers' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'suppliers' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
           >
             <Users size={20} />
             <span>工厂管理</span>
           </button>
           
           <button 
-            onClick={() => setCurrentView('admin')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'admin' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+            onClick={() => setCurrentView('userInvoices')}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'userInvoices' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
           >
-            <Building2 size={20} />
-            <span>系统管理</span>
+            <FileText size={20} />
+            <span>开票记录</span>
           </button>
           
           <button 
             onClick={() => setCurrentView('chat')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'chat' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'chat' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
           >
-            <Bot size={20} />
-            <span>AI分析</span>
+            <Sparkles size={20} />
+            <span>AI 助手</span>
           </button>
         </nav>
         
+        {/* Divider */}
+        <div className="my-4 border-t border-slate-700"></div>
+        
         {/* Quick Actions */}
-        <div className="mt-6">
-          <h2 className="text-sm font-semibold text-slate-500 mb-2">快捷操作</h2>
-          <div className="space-y-1">
-            <button onClick={handleOpenAddStore} className="w-full flex items-center gap-2 p-2 rounded-lg text-left bg-green-50 text-green-700 hover:bg-green-100">
-              <Plus size={16} />
-              <span>新增店铺</span>
-            </button>
-            <button onClick={handleOpenAddSupplier} className="w-full flex items-center gap-2 p-2 rounded-lg text-left bg-blue-50 text-blue-700 hover:bg-blue-100">
-              <Plus size={16} />
-              <span>新增工厂</span>
-            </button>
-            <button onClick={handleRestoreData} className="w-full flex items-center gap-2 p-2 rounded-lg text-left bg-amber-50 text-amber-700 hover:bg-amber-100">
-              <RefreshCw size={16} />
-              <span>恢复数据</span>
-            </button>
-          </div>
+        <div className="space-y-2 mb-4">
+          <button onClick={() => setActiveModal('addPayment')} className="w-full flex items-center gap-2 p-3 rounded-lg text-left bg-slate-800 text-slate-200 hover:bg-slate-700">
+            <CreditCard size={18} />
+            <span>登记工厂货款</span>
+          </button>
+          <button onClick={() => setActiveModal('addInvoice')} className="w-full flex items-center gap-2 p-3 rounded-lg text-left bg-slate-800 text-slate-200 hover:bg-slate-700">
+            <FilePlus size={18} />
+            <span>登记发票进项</span>
+          </button>
         </div>
         
-        {/* User Info */}
-        <div className="mt-auto pt-4 border-t border-slate-200">
-          <div className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
-            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-              <User size={16} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-800">{user?.user_metadata?.username || '用户'}</p>
-              <p className="text-xs text-slate-500">{user?.user_metadata?.level || '普通用户'}</p>
-            </div>
-            <button onClick={handleLogout} className="ml-auto text-slate-400 hover:text-slate-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 21 6-6-6-6"/><path d="M21 12H5"/></svg>
-            </button>
-          </div>
+        {/* Admin Settings */}
+        <div className="mt-auto pt-4 border-t border-slate-700">
+          <button 
+            onClick={() => setCurrentView('admin')}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'admin' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
+          >
+            <Settings size={20} />
+            <span>管理员设置</span>
+          </button>
         </div>
       </div>
       
