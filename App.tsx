@@ -462,6 +462,11 @@ function App() {
   
   // 使用实时订阅替代定期轮询
   useEffect(() => {
+    // 如果用户未登录，不订阅数据变化
+    if (!user) {
+      return;
+    }
+    
     // 订阅stores变化
     const storesSubscription = subscribeToStores(setStores);
     
@@ -504,7 +509,7 @@ function App() {
       factoryOwnersSubscription.unsubscribe();
       quarterSubscription.unsubscribe();
     };
-  }, []);
+  }, [user]);
   
   // 保存数据到Supabase（优先使用Supabase，仅在连接失败时使用localStorage作为临时备份）
   const saveAllData = async () => {
