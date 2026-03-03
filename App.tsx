@@ -419,34 +419,45 @@ function App() {
   useEffect(() => {
     let isMounted = true;
     
-    const authSubscription = subscribeToAuthChanges((user) => {
-      if (!isMounted) return;
-      
-      setUser(user);
-      setIsAuthLoading(false);
-      if (user) {
-        setCurrentView('dashboard');
-        // 登录成功后重新加载数据，确保数据是最新的
-        loadData();
-      } else {
-        setCurrentView('login');
-      }
-    });
+    try {
+      const authSubscription = subscribeToAuthChanges((user) => {
+        if (!isMounted) return;
+        
+        setUser(user);
+        setIsAuthLoading(false);
+        if (user) {
+          setCurrentView('dashboard');
+          // 登录成功后重新加载数据，确保数据是最新的
+          loadData();
+        } else {
+          setCurrentView('login');
+        }
+      });
 
-    // 设置超时，确保即使认证状态订阅失败，页面也不会一直显示加载中
-    const timeoutId = setTimeout(() => {
-      if (isMounted && isAuthLoading) {
-        console.warn('Auth loading timeout, forcing to login view');
+      // 设置超时，确保即使认证状态订阅失败，页面也不会一直显示加载中
+      const timeoutId = setTimeout(() => {
+        if (isMounted && isAuthLoading) {
+          console.warn('Auth loading timeout, forcing to login view');
+          setIsAuthLoading(false);
+          setCurrentView('login');
+        }
+      }, 3000);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(timeoutId);
+        authSubscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error('Error in auth subscription:', error);
+      if (isMounted) {
         setIsAuthLoading(false);
         setCurrentView('login');
       }
-    }, 3000);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-      authSubscription.unsubscribe();
-    };
+      return () => {
+        isMounted = false;
+      };
+    }
   }, []);
   
   // 使用实时订阅替代定期轮询
