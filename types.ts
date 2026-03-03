@@ -10,6 +10,18 @@ export enum StoreTaxType {
   GENERAL = '一般纳税人'
 }
 
+export enum StorePlatform {
+  TIANMAO = '天猫',
+  PINDUODUO = '拼多多',
+  DOUYIN = '抖音',
+  JD = '京东'
+}
+
+export enum InvoiceType {
+  NORMAL = '普通发票',
+  SPECIAL = '专项发票'
+}
+
 export interface SupplierEntity {
   id: string;
   name: string; // The business name (e.g., Anji Xinchang Trading)
@@ -17,6 +29,7 @@ export interface SupplierEntity {
   type: EntityType;
   quarterlyLimit: number; // usually 300,000 for Getihu
   status: 'Active' | 'Full' | 'Suspended';
+  version: number;
 }
 
 export interface ExpenseBreakdown {
@@ -37,6 +50,8 @@ export interface StoreCompany {
   quarterExpenses: number; // Real expenses (rent, ads, etc.)
   expenseBreakdown?: ExpenseBreakdown;
   taxType: StoreTaxType;
+  platform: StorePlatform;
+  version: number;
 }
 
 export interface InvoiceRecord {
@@ -45,6 +60,8 @@ export interface InvoiceRecord {
   supplierId: string;
   amount: number;
   date: string;
+  invoiceType: InvoiceType;
+  taxRate: number;
   status?: 'pending' | 'verified' | 'rejected';
   verificationResult?: {
     isValid: boolean;
@@ -53,6 +70,7 @@ export interface InvoiceRecord {
     companyName?: string;
     amount?: number;
   };
+  version: number;
 }
 
 export interface PaymentRecord {
@@ -62,6 +80,7 @@ export interface PaymentRecord {
   factoryOwner?: string;
   amount: number;
   date: string;
+  version: number;
 }
 
 export interface AnalysisResult {

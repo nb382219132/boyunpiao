@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => {
           '@': path.resolve(__dirname, '.'),
         }
       },
-      // GitHub Pages配置，使用正确的仓库名称作为base路径
-      base: '/invoice-management/',
+      // 开发环境使用相对路径，生产环境使用 GitHub Pages 路径
+      base: mode === 'production' ? '/invoice-management/' : './',
       build: {
         rollupOptions: {
           input: {

@@ -1,4 +1,4 @@
-import { StoreCompany, SupplierEntity, EntityType, InvoiceRecord, PaymentRecord, StoreTaxType } from './types';
+import { StoreCompany, SupplierEntity, EntityType, InvoiceRecord, PaymentRecord, StoreTaxType, StorePlatform } from './types';
 
 export const QUARTERLY_LIMIT_THRESHOLD = 280000;
 
@@ -9,7 +9,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '雷超',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's2',
@@ -17,7 +18,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '余永忠',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's3',
@@ -25,7 +27,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '周娜',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Full'
+    status: 'Full',
+    version: 1
   },
   {
     id: 's4',
@@ -33,7 +36,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '赵国庆',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's5',
@@ -41,7 +45,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '陈增望',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's6',
@@ -49,7 +54,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '管盛军',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's7',
@@ -57,7 +63,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '施云杰',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's8',
@@ -65,7 +72,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '孙永涛',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 190000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's9',
@@ -73,7 +81,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '付新海',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's10',
@@ -81,7 +90,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '张秋红',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's11',
@@ -89,7 +99,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '程利',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's12',
@@ -97,7 +108,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '钟大奖',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's13',
@@ -105,7 +117,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '鲍伟',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's14',        
@@ -113,7 +126,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '应凯',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's15',
@@ -121,7 +135,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '吴洪波',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's16',
@@ -129,7 +144,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '王林',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   },
   {
     id: 's17', 
@@ -137,7 +153,8 @@ export const MOCK_SUPPLIERS: SupplierEntity[] = [
     owner: '杨凯',
     type: EntityType.INDIVIDUAL,
     quarterlyLimit: 280000,
-    status: 'Active'
+    status: 'Active',
+    version: 1
   }
 ];
 
@@ -149,6 +166,8 @@ export const MOCK_STORES: StoreCompany[] = [
     quarterIncome: 3708948.79,
     quarterExpenses: 0,
     taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.TIANMAO,
+    version: 1,
     expenseBreakdown: {
       shipping: 0,
       promotion: 0,
@@ -165,7 +184,9 @@ export const MOCK_STORES: StoreCompany[] = [
     companyName: '杭州北欧曼家具有限公司',
     quarterIncome: 1316294.79,
     quarterExpenses: 0,
-    taxType: StoreTaxType.SMALL_SCALE
+    taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.PINDUODUO,
+    version: 1
   },
   {
     id: 'c3',
@@ -173,7 +194,9 @@ export const MOCK_STORES: StoreCompany[] = [
     companyName: '杭州达奇菲尔家居有限公司',
     quarterIncome: 1330225.58,
     quarterExpenses: 0,
-    taxType: StoreTaxType.SMALL_SCALE
+    taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.DOUYIN,
+    version: 1
   },
   {
     id: 'c4',
@@ -181,7 +204,9 @@ export const MOCK_STORES: StoreCompany[] = [
     companyName: '杭州维家漫家居有限公司',
     quarterIncome: 2832716.99,
     quarterExpenses: 0,
-    taxType: StoreTaxType.SMALL_SCALE
+    taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.JD,
+    version: 1
   },
   {
     id: 'c5',
@@ -189,7 +214,9 @@ export const MOCK_STORES: StoreCompany[] = [
     companyName: '杭州元牧家居用品有限公司',
     quarterIncome: 1637686.11,
     quarterExpenses: 0,
-    taxType: StoreTaxType.SMALL_SCALE
+    taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.TIANMAO,
+    version: 1
   },
   {
     id: 'c6',
@@ -197,7 +224,9 @@ export const MOCK_STORES: StoreCompany[] = [
     companyName: '杭州达雷尔沃家居有限公司',
     quarterIncome: 602530.6,
     quarterExpenses: 0,
-    taxType: StoreTaxType.SMALL_SCALE
+    taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.PINDUODUO,
+    version: 1
   },
   {
     id: 'c7',
@@ -205,7 +234,9 @@ export const MOCK_STORES: StoreCompany[] = [
     companyName: '杭州元森启木家居用品有限公司',
     quarterIncome: 1262177.71,
     quarterExpenses: 0,
-    taxType: StoreTaxType.SMALL_SCALE
+    taxType: StoreTaxType.SMALL_SCALE,
+    platform: StorePlatform.DOUYIN,
+    version: 1
   }
 ];
 

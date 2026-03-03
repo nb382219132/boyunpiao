@@ -25,7 +25,15 @@ import {
   saveFactoryOwners,
   migrateDataFromLocalStorage,
   restoreDataFromBackup,
-  hasDataInSupabase
+  hasDataInSupabase,
+  signUp,
+  signIn,
+  signOut,
+  getCurrentUser,
+  subscribeToAuthChanges,
+  getUsers,
+  updateUserStatus,
+  createAdminAccount
 } from './services/supabaseService';
 import { 
   LayoutDashboard, 
@@ -58,7 +66,7 @@ import {
   MOCK_PAYMENTS,
   QUARTERLY_LIMIT_THRESHOLD 
 } from './constants';
-import { StoreCompany, SupplierEntity, InvoiceRecord, PaymentRecord, EntityType, StoreTaxType } from './types';
+import { StoreCompany, SupplierEntity, InvoiceRecord, PaymentRecord, EntityType, StoreTaxType, StorePlatform, InvoiceType } from './types';
 import StoreCard from './components/StoreCard';
 import SupplierRow, { SupplierItemData } from './components/SupplierRow';
 import AiChat from './components/AiChat';
@@ -69,7 +77,7 @@ import ReactMarkdown from 'react-markdown';
 import { getInvoiceStatusInfo } from './services/invoiceRecognition';
 
 // Simple Navigation State
-type View = 'dashboard' | 'stores' | 'suppliers' | 'chat' | 'admin' | 'userInvoices';
+type View = 'dashboard' | 'stores' | 'suppliers' | 'chat' | 'admin' | 'userInvoices' | 'login' | 'signup';
 type ModalType = 'addStore' | 'editStore' | 'addSupplier' | 'editEntity' | 'editOwner' | 'addPayment' | 'addInvoice' | 'editExpenses' | 'quarterManagement' | 'deleteStore' | 'deleteEntity' | 'deleteOwner' | null;
 
 // --- Modal Component (Defined outside to prevent re-renders losing focus) ---
@@ -94,8 +102,29 @@ const ModalBackdrop: React.FC<ModalBackdropProps> = ({ children, title, onClose 
 );
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [currentView, setCurrentView] = useState<View>('login');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPlatform, setSelectedPlatform] = useState<StorePlatform | 'all'>(StorePlatform.TIANMAO);
+  
+  // 用户认证状态
+  const [user, setUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  
+  // 登录表单状态
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState<string | null>(null);
+  
+  // 注册表单状态
+  const [signupForm, setSignupForm] = useState({ username: '', password: '', confirmPassword: '' });
+  const [signupError, setSignupError] = useState<string | null>(null);
+  
+  // 数据同步状态
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncMessage, setSyncMessage] = useState<string>('');
+  
+  // 分析结果状态
+  const [analysisResults, setAnalysisResults] = useState<Array<{timestamp: Date, result: string}>>([]);
   
   // Data State with Supabase persistence
   const [stores, setStores] = useState<StoreCompany[]>([]);
@@ -123,12 +152,12 @@ function App() {
   }>>({});
   
   // --- Form States for Add/Edit ---
-  const [storeForm, setStoreForm] = useState({ id: '', companyName: '', storeName: '', income: '', expenses: '', taxType: StoreTaxType.GENERAL });
+  const [storeForm, setStoreForm] = useState({ id: '', companyName: '', storeName: '', income: '', expenses: '', taxType: StoreTaxType.GENERAL, platform: StorePlatform.TIANMAO });
   const [supplierForm, setSupplierForm] = useState({ id: '', name: '', owner: '', type: EntityType.INDIVIDUAL, limit: 280000 });
   const [ownerRenameForm, setOwnerRenameForm] = useState({ oldName: '', newName: '' });
   
   const [isNewFactory, setIsNewFactory] = useState(true); // Toggle between creating new factory or adding to existing
-  const [transaction, setTransaction] = useState({ storeId: '', supplierId: '', amount: '', date: '' });
+  const [transaction, setTransaction] = useState({ storeId: '', supplierId: '', amount: '', date: '', invoiceType: InvoiceType.NORMAL, taxRate: 1 });
   
   // Search state for suppliers
   const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
@@ -153,6 +182,10 @@ function App() {
 
   // Factory owners list - to track factories independently from entities
   const [factoryOwners, setFactoryOwners] = useState<string[]>([]);
+
+  // 用户管理相关状态
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   // Backup data state for import/export functionality
   const [backupData, setBackupData] = useState<any>({
@@ -369,9 +402,33 @@ function App() {
     }
   };
   
-  // 初始加载数据
+  // 初始加载数据和创建管理员账号
   useEffect(() => {
-    loadData();
+    const initApp = async () => {
+      // 创建管理员账号
+      await createAdminAccount();
+      // 加载数据
+      await loadData();
+    };
+    
+    initApp();
+  }, []);
+
+  // 监听认证状态变化
+  useEffect(() => {
+    const authSubscription = subscribeToAuthChanges((user) => {
+      setUser(user);
+      setIsAuthLoading(false);
+      if (user) {
+        setCurrentView('dashboard');
+      } else {
+        setCurrentView('login');
+      }
+    });
+
+    return () => {
+      authSubscription.unsubscribe();
+    };
   }, []);
   
   // 使用实时订阅替代定期轮询
@@ -503,8 +560,129 @@ function App() {
   
   // 当数据变化时自动保存
   useEffect(() => {
-    saveAllData();
-  }, [stores, suppliers, invoices, payments, quarterData, availableQuarters, currentQuarter, factoryOwners]);
+    // 只保存变化的stores数据
+    setSyncStatus('syncing');
+    setSyncMessage('正在同步店铺数据...');
+    saveStores(stores).then(success => {
+      if (success) {
+        setSyncStatus('success');
+        setSyncMessage('店铺数据同步成功');
+      } else {
+        setSyncStatus('error');
+        setSyncMessage('店铺数据同步失败');
+      }
+      // 3秒后重置同步状态
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setSyncMessage('');
+      }, 3000);
+    });
+  }, [stores]);
+
+  useEffect(() => {
+    // 只保存变化的suppliers数据
+    setSyncStatus('syncing');
+    setSyncMessage('正在同步供应商数据...');
+    saveSuppliers(suppliers).then(success => {
+      if (success) {
+        setSyncStatus('success');
+        setSyncMessage('供应商数据同步成功');
+      } else {
+        setSyncStatus('error');
+        setSyncMessage('供应商数据同步失败');
+      }
+      // 3秒后重置同步状态
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setSyncMessage('');
+      }, 3000);
+    });
+  }, [suppliers]);
+
+  useEffect(() => {
+    // 只保存变化的invoices数据
+    setSyncStatus('syncing');
+    setSyncMessage('正在同步发票数据...');
+    saveInvoices(invoices).then(success => {
+      if (success) {
+        setSyncStatus('success');
+        setSyncMessage('发票数据同步成功');
+      } else {
+        setSyncStatus('error');
+        setSyncMessage('发票数据同步失败');
+      }
+      // 3秒后重置同步状态
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setSyncMessage('');
+      }, 3000);
+    });
+  }, [invoices]);
+
+  useEffect(() => {
+    // 只保存变化的payments数据
+    setSyncStatus('syncing');
+    setSyncMessage('正在同步付款数据...');
+    savePayments(payments).then(success => {
+      if (success) {
+        setSyncStatus('success');
+        setSyncMessage('付款数据同步成功');
+      } else {
+        setSyncStatus('error');
+        setSyncMessage('付款数据同步失败');
+      }
+      // 3秒后重置同步状态
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setSyncMessage('');
+      }, 3000);
+    });
+  }, [payments]);
+
+  useEffect(() => {
+    // 只保存变化的季度相关数据
+    setSyncStatus('syncing');
+    setSyncMessage('正在同步季度数据...');
+    Promise.all([
+      saveQuarterData(quarterData),
+      saveAvailableQuarters(availableQuarters),
+      saveCurrentQuarter(currentQuarter)
+    ]).then(results => {
+      const allSuccess = results.every(result => result);
+      if (allSuccess) {
+        setSyncStatus('success');
+        setSyncMessage('季度数据同步成功');
+      } else {
+        setSyncStatus('error');
+        setSyncMessage('季度数据同步失败');
+      }
+      // 3秒后重置同步状态
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setSyncMessage('');
+      }, 3000);
+    });
+  }, [quarterData, availableQuarters, currentQuarter]);
+
+  useEffect(() => {
+    // 只保存变化的factoryOwners数据
+    setSyncStatus('syncing');
+    setSyncMessage('正在同步工厂数据...');
+    saveFactoryOwners(factoryOwners).then(success => {
+      if (success) {
+        setSyncStatus('success');
+        setSyncMessage('工厂数据同步成功');
+      } else {
+        setSyncStatus('error');
+        setSyncMessage('工厂数据同步失败');
+      }
+      // 3秒后重置同步状态
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setSyncMessage('');
+      }, 3000);
+    });
+  }, [factoryOwners]);
 
   // 动态调整浮窗位置
   useEffect(() => {
@@ -558,11 +736,19 @@ function App() {
 
   // --- Computed Data Helpers ---
 
-  // Filter stores based on search term
-  const filteredStores = stores.filter(store => 
-    store.storeName.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
-    store.companyName.toLowerCase().includes(storeSearchTerm.toLowerCase())
-  );
+  // Filter stores based on search term, platform, and user's platform permissions
+  const filteredStores = stores.filter(store => {
+    const matchesSearch = store.storeName.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
+      store.companyName.toLowerCase().includes(storeSearchTerm.toLowerCase());
+    const matchesPlatform = selectedPlatform === 'all' || store.platform === selectedPlatform;
+    
+    // 检查用户是否有权限查看该店铺的平台
+    const userLevel = user?.user_metadata?.level || 'normal';
+    const userPlatforms = user?.user_metadata?.platforms || [];
+    const hasPlatformPermission = userLevel === 'advanced' || userPlatforms.length === 0 || userPlatforms.includes(store.platform);
+    
+    return matchesSearch && matchesPlatform && hasPlatformPermission;
+  });
   const getStoreInvoicedTotal = (storeId: string) => 
     invoices.filter(i => i.storeId === storeId).reduce((sum, i) => sum + i.amount, 0);
 
@@ -659,11 +845,11 @@ function App() {
     const invoiceDetails = [
       '',
       '发票明细：',
-      '开票日期,店铺名称,店铺绑定公司,开票主体,开票主体所属工厂,开票金额',
+      '开票日期,店铺名称,店铺绑定公司,开票主体,开票主体所属工厂,开票金额,发票类型,税率',
       ...invoices.map(invoice => {
         const store = stores.find(s => s.id === invoice.storeId);
         const supplier = suppliers.find(s => s.id === invoice.supplierId);
-        return `${invoice.date},${store?.storeName || '未知店铺'},${store?.companyName || '未知公司'},${supplier?.name || '未知主体'},${supplier?.owner || '未知工厂'},${invoice.amount.toFixed(2)}`;
+        return `${invoice.date},${store?.storeName || '未知店铺'},${store?.companyName || '未知公司'},${supplier?.name || '未知主体'},${supplier?.owner || '未知工厂'},${invoice.amount.toFixed(2)},${invoice.invoiceType || '普通发票'},${invoice.taxRate || 1}%`;
       })
     ].join("\n");
     
@@ -685,11 +871,11 @@ function App() {
     const invoiceDetails = [
       '',
       '开票明细：',
-      '开票日期,工厂负责人,开票单位,开票店铺,开票店铺绑定公司,开票金额',
+      '开票日期,工厂负责人,开票单位,开票店铺,开票店铺绑定公司,开票金额,发票类型,税率',
       ...invoices.map(invoice => {
         const store = stores.find(s => s.id === invoice.storeId);
         const supplier = suppliers.find(s => s.id === invoice.supplierId);
-        return `${invoice.date},${supplier?.owner || '未知工厂'},${supplier?.name || '未知主体'},${store?.storeName || '未知店铺'},${store?.companyName || '未知公司'},${invoice.amount.toFixed(2)}`;
+        return `${invoice.date},${supplier?.owner || '未知工厂'},${supplier?.name || '未知主体'},${store?.storeName || '未知店铺'},${store?.companyName || '未知公司'},${invoice.amount.toFixed(2)},${invoice.invoiceType || '普通发票'},${invoice.taxRate || 1}%`;
       })
     ].join("\n");
     
@@ -772,6 +958,36 @@ function App() {
     }
   };
   
+  // 加载用户列表
+  const loadUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const usersList = await getUsers();
+      setUsers(usersList);
+    } catch (error) {
+      console.error('加载用户列表失败:', error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // 处理用户状态、平台和等级更新
+  const handleUpdateUserStatus = async (userId: string, status: 'active' | 'pending' | 'blocked', platforms?: string[], level?: 'normal' | 'advanced') => {
+    try {
+      const success = await updateUserStatus(userId, status, platforms, level);
+      if (success) {
+        // 重新加载用户列表
+        await loadUsers();
+        alert('用户信息更新成功');
+      } else {
+        alert('用户信息更新失败');
+      }
+    } catch (error) {
+      console.error('更新用户信息失败:', error);
+      alert('用户信息更新失败');
+    }
+  };
+
   // 恢复数据按钮处理函数
   const handleRestoreData = () => {
     // 创建一个input元素，类型为file，接受.json文件
@@ -976,11 +1192,20 @@ function App() {
     // Prepare view models for AI
     const storeAnalysisData = stores.map(s => {
       const invoiced = getStoreInvoicedTotal(s.id);
+      // 获取该店铺的历史供应商
+      const historicalSuppliers = Array.from(new Set(
+        invoices.filter(i => i.storeId === s.id).map(i => {
+          const supplier = suppliers.find(sup => sup.id === i.supplierId);
+          return supplier ? supplier.name : '';
+        }).filter(Boolean)
+      ));
       return {
         companyName: s.companyName,
         quarterIncome: s.quarterIncome,
         invoicesReceived: invoiced,
-        gap: Math.max(0, s.quarterIncome - s.quarterExpenses - invoiced)
+        gap: Math.max(0, s.quarterIncome - s.quarterExpenses - invoiced),
+        taxType: s.taxType,
+        historicalSuppliers: historicalSuppliers
       };
     });
 
@@ -989,18 +1214,24 @@ function App() {
       return {
         name: s.name,
         remainingQuota: s.quarterlyLimit - used,
-        status: s.status
+        status: s.status,
+        type: s.type
       };
     });
 
     const result = await analyzeTaxOptimization(storeAnalysisData, supplierAnalysisData);
     setAiAnalysis(result || "分析生成失败。");
+    // 保存分析结果到历史记录
+    setAnalysisResults(prev => [
+      { timestamp: new Date(), result: result || "分析生成失败。" },
+      ...prev
+    ]);
     setAnalyzing(false);
   };
 
   const openInvoiceModal = (storeId: string = '') => {
     const today = new Date().toISOString().split('T')[0];
-    setTransaction({ storeId: storeId, supplierId: '', amount: '', date: today });
+    setTransaction({ storeId: storeId, supplierId: '', amount: '', date: today, invoiceType: InvoiceType.NORMAL, taxRate: 1 });
     setActiveModal('addInvoice');
   };
 
@@ -1051,7 +1282,7 @@ function App() {
   // --- Store CRUD ---
 
   const handleOpenAddStore = () => {
-    setStoreForm({ id: '', companyName: '', storeName: '', income: '', expenses: '', taxType: StoreTaxType.GENERAL });
+    setStoreForm({ id: '', companyName: '', storeName: '', income: '', expenses: '', taxType: StoreTaxType.GENERAL, platform: StorePlatform.TIANMAO });
     setActiveModal('addStore');
   };
 
@@ -1062,7 +1293,8 @@ function App() {
       storeName: store.storeName,
       income: store.quarterIncome.toString(),
       expenses: store.quarterExpenses.toString(),
-      taxType: store.taxType
+      taxType: store.taxType,
+      platform: store.platform
     });
     setActiveModal('editStore');
   };
@@ -1080,7 +1312,8 @@ function App() {
          quarterIncome: parseFloat(storeForm.income) || 0,
          // We ignore expenses here as they are managed via expense breakdown now, unless new store
          quarterExpenses: s.quarterExpenses, 
-         taxType: storeForm.taxType
+         taxType: storeForm.taxType,
+         platform: storeForm.platform
        } : s);
     } else {
        // Create
@@ -1090,7 +1323,8 @@ function App() {
         storeName: storeForm.storeName,
         quarterIncome: parseFloat(storeForm.income) || 0,
         quarterExpenses: 0, // Initialize to 0, user should add breakdown
-        taxType: storeForm.taxType
+        taxType: storeForm.taxType,
+        platform: storeForm.platform
       };
       updatedStores = [...stores, s];
     }
@@ -1281,6 +1515,8 @@ function App() {
       supplierId: recognizedData.supplierId,
       amount: recognizedData.amount,
       date: recognizedData.date,
+      invoiceType: InvoiceType.NORMAL,
+      taxRate: 1,
       status: recognizedData.status,
       verificationResult: recognizedData.verificationResult
     };
@@ -1296,6 +1532,55 @@ function App() {
     const updatedFactoryOwners = factoryOwners.filter(owner => owner !== ownerName);
     setFactoryOwners(updatedFactoryOwners);
     // Note: We don't delete the entities here anymore - they remain as orphaned records
+  };
+
+  // 登录处理函数
+  const handleLogin = async () => {
+    setLoginError(null);
+    if (!loginForm.username || !loginForm.password) {
+      setLoginError('请输入用户名和密码');
+      return;
+    }
+
+    const { user, error } = await signIn(loginForm.username, loginForm.password);
+    if (error) {
+      setLoginError(error.message || '登录失败，请检查用户名和密码');
+      return;
+    }
+    
+    setLoginForm({ username: '', password: '' });
+  };
+
+  // 注册处理函数
+  const handleSignup = async () => {
+    setSignupError(null);
+    if (!signupForm.username || !signupForm.password || !signupForm.confirmPassword) {
+      setSignupError('请填写所有字段');
+      return;
+    }
+
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setSignupError('两次输入的密码不一致');
+      return;
+    }
+
+    const { user, error } = await signUp(signupForm.username, signupForm.password);
+    if (error) {
+      setSignupError(error.message || '注册失败，请稍后重试');
+      return;
+    }
+
+    // 注册成功，显示提示信息
+    alert('注册申请已提交，请等待管理员审核后再登录');
+    setSignupForm({ username: '', password: '', confirmPassword: '' });
+  };
+
+  // 登出处理函数
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      console.error('登出失败:', error);
+    }
   };
 
 
@@ -1363,12 +1648,14 @@ function App() {
         storeId: transaction.storeId,
         supplierId: transaction.supplierId,
         amount: amountVal,
-        date: transaction.date
+        date: transaction.date,
+        invoiceType: transaction.invoiceType,
+        taxRate: transaction.taxRate
       };
       const updatedInvoices = [...invoices, i];
       setInvoices(updatedInvoices);
     }
-    setTransaction({ storeId: '', supplierId: '', amount: '', date: '' });
+    setTransaction({ storeId: '', supplierId: '', amount: '', date: '', invoiceType: InvoiceType.NORMAL, taxRate: 1 });
     setActiveModal(null);
   };
 
@@ -1423,6 +1710,9 @@ function App() {
     // 设置当前季度为新季度
     setCurrentQuarter(newQuarterName);
     
+    // 检查是否是跨年度的季度切换
+    const isNewYear = nextYear > currentYear;
+    
     // 重置新季度的数据
     const resetStores = stores.map(store => ({
       ...store,
@@ -1431,18 +1721,40 @@ function App() {
     }));
     
     const resetSuppliers = suppliers.map(supplier => {
-      // 如果是个体工商户，将开票额度设置为280000
+      // 个体工商户在每个季度都需要重置额度
       if (supplier.type === EntityType.INDIVIDUAL) {
         return {
           ...supplier,
           quarterlyLimit: 280000
         };
       }
-      // 其他类型保持不变
-      return {
-        ...supplier,
-        // 保留供应商的基本信息，不重置任何数据
-      };
+      
+      // 只有在跨年度时，才重置小规模公司、一般纳税人、大额个体户的开票额度
+      if (isNewYear) {
+        // 根据不同类型设置不同的默认额度
+        let defaultLimit = 280000;
+        switch (supplier.type) {
+          case EntityType.COMPANY:
+            defaultLimit = 280000; // 小规模纳税人
+            break;
+          case EntityType.GENERAL:
+            defaultLimit = 5000000; // 一般纳税人
+            break;
+          case EntityType.LARGE_INDIVIDUAL:
+            defaultLimit = 500000; // 大额个体户
+            break;
+          default:
+            defaultLimit = 280000;
+        }
+        
+        return {
+          ...supplier,
+          quarterlyLimit: defaultLimit
+        };
+      }
+      
+      // 其他情况保持不变
+      return supplier;
     });
     
     setStores(resetStores);
@@ -1644,6 +1956,20 @@ function App() {
                 placeholder="选择类型"
              />
           </div>
+          <div className="space-y-1 mt-2">
+             <label className="text-xs font-semibold text-slate-500">销售平台</label>
+             <SearchableSelect
+                options={[
+                  { value: StorePlatform.TIANMAO, label: StorePlatform.TIANMAO },
+                  { value: StorePlatform.PINDUODUO, label: StorePlatform.PINDUODUO },
+                  { value: StorePlatform.DOUYIN, label: StorePlatform.DOUYIN },
+                  { value: StorePlatform.JD, label: StorePlatform.JD }
+                ]}
+                value={storeForm.platform}
+                onChange={val => setStoreForm({...storeForm, platform: val as StorePlatform})}
+                placeholder="选择平台"
+             />
+          </div>
           <button onClick={handleSaveStore} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">确认{activeModal === 'addStore' ? '添加' : '保存'}</button>
         </ModalBackdrop>
       )}
@@ -1768,6 +2094,30 @@ function App() {
             <div>
               <label className="text-xs text-slate-500 mb-1 block">开票金额</label>
               <input className="w-full p-2 border rounded" type="number" placeholder="开票金额" value={transaction.amount} onChange={e => setTransaction({...transaction, amount: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">发票类型</label>
+              <SearchableSelect
+                options={[
+                  { value: InvoiceType.NORMAL, label: InvoiceType.NORMAL },
+                  { value: InvoiceType.SPECIAL, label: InvoiceType.SPECIAL }
+                ]}
+                value={transaction.invoiceType}
+                onChange={val => setTransaction({...transaction, invoiceType: val as InvoiceType, taxRate: val === InvoiceType.NORMAL ? 1 : transaction.taxRate})}
+                placeholder="选择发票类型"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">税率 (%)</label>
+              <input 
+                className="w-full p-2 border rounded" 
+                type="number" 
+                placeholder="税率" 
+                value={transaction.taxRate} 
+                onChange={e => setTransaction({...transaction, taxRate: parseFloat(e.target.value) || 0})}
+                step="0.1"
+                min="0"
+              />
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block">开票日期</label>
@@ -1901,6 +2251,19 @@ function App() {
               {currentView === 'chat' && 'AI分析'}
             </h1>
             <div className="flex items-center gap-3">
+              {/* 同步状态指示器 */}
+              {syncStatus !== 'idle' && (
+                <div className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
+                  syncStatus === 'syncing' ? 'bg-blue-100 text-blue-700' :
+                  syncStatus === 'success' ? 'bg-green-100 text-green-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {syncStatus === 'syncing' && <RefreshCw size={16} className="animate-spin" />}
+                  {syncStatus === 'success' && <Shield size={16} />}
+                  {syncStatus === 'error' && <X size={16} />}
+                  <span>{syncMessage}</span>
+                </div>
+              )}
               <button onClick={handleExportData} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200">
                 <Download size={16} />
                 <span>导出数据</span>
@@ -1908,6 +2271,10 @@ function App() {
               <button onClick={() => setActiveModal('quarterManagement')} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200">
                 <Calendar size={16} />
                 <span>季度管理</span>
+              </button>
+              <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200">
+                <User size={16} />
+                <span>退出登录</span>
               </button>
             </div>
           </div>
@@ -2069,8 +2436,36 @@ function App() {
         {/* Stores View */}
         {!isLoading && currentView === 'stores' && (
           <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">店铺管理</h2>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 mb-3">店铺管理</h2>
+                <div className="flex flex-wrap gap-2">
+                  {/* 过滤平台列表，高级用户显示所有平台，普通用户只显示自己有权限的平台 */}
+                  {(() => {
+                    const allPlatforms = ['all', StorePlatform.TIANMAO, StorePlatform.PINDUODUO, StorePlatform.DOUYIN, StorePlatform.JD] as const;
+                    const userLevel = user?.user_metadata?.level || 'normal';
+                    const userPlatforms = user?.user_metadata?.platforms || [];
+                    
+                    // 高级用户显示所有平台
+                    if (userLevel === 'advanced' || userPlatforms.length === 0) {
+                      return allPlatforms;
+                    }
+                    
+                    // 普通用户只显示自己有权限的平台，加上"全部"选项
+                    return ['all', ...userPlatforms];
+                  })().map(platform => (
+                    <button
+                      key={platform}
+                      onClick={() => setSelectedPlatform(platform as StorePlatform | 'all')}
+                      className={`px-4 py-2 rounded-md font-medium transition-colors ${selectedPlatform === platform 
+                        ? 'bg-red-500 text-white' 
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                    >
+                      {platform === 'all' ? '全部' : platform}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center gap-3">
                 <input 
                   type="text" 
@@ -2201,6 +2596,147 @@ function App() {
           <div className="p-6 space-y-6">
             <h2 className="text-xl font-bold text-slate-800">系统管理</h2>
             
+            {/* 用户管理 Section */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">用户管理</h3>
+                <button 
+                  onClick={loadUsers} 
+                  className="flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                >
+                  <RefreshCw size={14} />
+                  <span>刷新用户列表</span>
+                </button>
+              </div>
+              
+              {isLoadingUsers ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  暂无用户数据
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                          邮箱
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                          状态
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                          等级
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                          平台
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                          操作
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-200">
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                            {user.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            <span className={`px-2 py-1 text-xs rounded-full ${user.user_metadata?.status === 'active' ? 'bg-green-100 text-green-800' : user.user_metadata?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                              {user.user_metadata?.status === 'active' ? '已激活' : user.user_metadata?.status === 'pending' ? '待审核' : '已禁用'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            <span className={`px-2 py-1 text-xs rounded-full ${user.user_metadata?.level === 'advanced' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {user.user_metadata?.level === 'advanced' ? '高级' : '普通'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            <div className="flex flex-wrap gap-1">
+                              {user.user_metadata?.platforms && user.user_metadata.platforms.length > 0 ? (
+                                user.user_metadata.platforms.map((platform: string, index: number) => (
+                                  <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                    {platform}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-slate-400 text-xs">无</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {user.user_metadata?.status === 'pending' && (
+                              <button
+                                onClick={() => handleUpdateUserStatus(user.id, 'active')}
+                                className="text-green-600 hover:text-green-900 mr-3"
+                              >
+                                审核通过
+                              </button>
+                            )}
+                            {user.user_metadata?.status === 'active' && (
+                              <button
+                                onClick={() => handleUpdateUserStatus(user.id, 'blocked')}
+                                className="text-red-600 hover:text-red-900 mr-3"
+                              >
+                                禁用
+                              </button>
+                            )}
+                            {user.user_metadata?.status === 'blocked' && (
+                              <button
+                                onClick={() => handleUpdateUserStatus(user.id, 'active')}
+                                className="text-green-600 hover:text-green-900 mr-3"
+                              >
+                                启用
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                // 打开平台选择对话框
+                                const selectedPlatforms = user.user_metadata?.platforms || [];
+                                const platforms = Object.values(StorePlatform);
+                                const selected = window.confirm(
+                                  `选择平台：\n${platforms.map(p => `${selectedPlatforms.includes(p) ? '[√]' : '[ ]'} ${p}`).join('\n')}\n\n按确定进入详细选择`
+                                );
+                                if (selected) {
+                                  // 这里可以实现更复杂的平台选择界面
+                                  // 为了简化，我们暂时使用prompt让用户输入平台
+                                  const input = prompt('请输入平台，多个平台用逗号分隔（可选：天猫, 拼多多, 抖音, 京东）');
+                                  if (input) {
+                                    const newPlatforms = input.split(',').map(p => p.trim()).filter(Boolean);
+                                    handleUpdateUserStatus(user.id, user.user_metadata?.status as 'active' | 'pending' | 'blocked', newPlatforms);
+                                  }
+                                }
+                              }}
+                              className="text-blue-600 hover:text-blue-900 mr-3"
+                            >
+                              设置平台
+                            </button>
+                            <button
+                              onClick={() => {
+                                // 打开等级选择对话框
+                                const currentLevel = user.user_metadata?.level || 'normal';
+                                const newLevel = currentLevel === 'normal' ? 'advanced' : 'normal';
+                                if (window.confirm(`确定要将用户等级从"${currentLevel === 'normal' ? '普通' : '高级'}"更改为"${newLevel === 'normal' ? '普通' : '高级'}"吗？`)) {
+                                  handleUpdateUserStatus(user.id, user.user_metadata?.status as 'active' | 'pending' | 'blocked', undefined, newLevel);
+                                }
+                              }}
+                              className="text-purple-600 hover:text-purple-900"
+                            >
+                              {user.user_metadata?.level === 'advanced' ? '设为普通' : '设为高级'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            
             {/* System Backup Section */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">系统备份与恢复</h3>
@@ -2319,6 +2855,8 @@ function App() {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">店铺名称</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">开票主体</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">开票金额</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">发票类型</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">税率</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">状态</th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">操作</th>
                     </tr>
@@ -2335,6 +2873,8 @@ function App() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{store?.storeName || '未知店铺'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{supplier?.name || '未知主体'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">¥{invoice.amount.toLocaleString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{invoice.invoiceType}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{invoice.taxRate}%</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.className}`}>
                               {statusInfo.label}
@@ -2457,6 +2997,132 @@ function App() {
           </div>
         )}
         
+        {/* 登录页面 */}
+        {currentView === 'login' && (
+          <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-800">登录系统</h2>
+                <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
+              </div>
+              
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
+                  {loginError}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={loginForm.username}
+                    onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
+                    placeholder="请输入用户名"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+                  <input 
+                    type="password" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                    placeholder="请输入密码"
+                  />
+                </div>
+                <button 
+                  onClick={handleLogin}
+                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  登录
+                </button>
+                <div className="text-center mt-4">
+                  <p className="text-slate-600">
+                    还没有账号？
+                    <button 
+                      onClick={() => setCurrentView('signup')}
+                      className="text-indigo-600 font-medium ml-1 hover:underline"
+                    >
+                      立即注册
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* 注册页面 */}
+        {currentView === 'signup' && (
+          <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-800">注册账号</h2>
+                <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
+              </div>
+              
+              {signupError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
+                  {signupError}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={signupForm.username}
+                    onChange={(e) => setSignupForm({...signupForm, username: e.target.value})}
+                    placeholder="请输入用户名"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+                  <input 
+                    type="password" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={signupForm.password}
+                    onChange={(e) => setSignupForm({...signupForm, password: e.target.value})}
+                    placeholder="请输入密码"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">确认密码</label>
+                  <input 
+                    type="password" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={signupForm.confirmPassword}
+                    onChange={(e) => setSignupForm({...signupForm, confirmPassword: e.target.value})}
+                    placeholder="请再次输入密码"
+                  />
+                </div>
+                <button 
+                  onClick={handleSignup}
+                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  注册
+                </button>
+                <div className="text-center mt-4">
+                  <p className="text-slate-600">
+                    已有账号？
+                    <button 
+                      onClick={() => setCurrentView('login')}
+                      className="text-indigo-600 font-medium ml-1 hover:underline"
+                    >
+                      立即登录
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* AI Chat View */}
         {!isLoading && currentView === 'chat' && (
           <div className="p-6 space-y-6">
@@ -2485,6 +3151,25 @@ function App() {
                 </div>
               )}
             </div>
+            
+            {/* 历史分析结果 */}
+            {analysisResults.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">历史分析结果</h3>
+                <div className="space-y-4">
+                  {analysisResults.map((item, index) => (
+                    <div key={index} className="p-4 border border-slate-200 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-slate-500">{item.timestamp.toLocaleString()}</span>
+                      </div>
+                      <div className="prose max-w-none text-sm">
+                        <ReactMarkdown>{item.result}</ReactMarkdown>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <AiChat 
               stores={stores} 
