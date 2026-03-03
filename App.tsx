@@ -1937,51 +1937,241 @@ function App() {
     setPaymentCurrentPage(1);
   }, [paymentSearchTerm]);
 
+  // 未登录时显示登录或注册页面
+  if (currentView === 'login' || currentView === 'signup') {
+    return (
+      <>
+        {currentView === 'login' && (
+          <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-800">登录系统</h2>
+                <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
+              </div>
+              
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
+                  {loginError}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={loginForm.username}
+                    onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
+                    placeholder="请输入用户名"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+                  <input 
+                    type="password" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                    placeholder="请输入密码"
+                  />
+                </div>
+                <button 
+                  onClick={handleLogin}
+                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  登录
+                </button>
+                <div className="text-center mt-4">
+                  <p className="text-slate-600">
+                    还没有账号？
+                    <button 
+                      onClick={() => setCurrentView('signup')}
+                      className="text-indigo-600 font-medium ml-1 hover:underline"
+                    >
+                      立即注册
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {currentView === 'signup' && (
+          <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-800">注册账号</h2>
+                <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
+              </div>
+              
+              {signupError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
+                  {signupError}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={signupForm.username}
+                    onChange={(e) => setSignupForm({...signupForm, username: e.target.value})}
+                    placeholder="请输入用户名"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+                  <input 
+                    type="password" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={signupForm.password}
+                    onChange={(e) => setSignupForm({...signupForm, password: e.target.value})}
+                    placeholder="请输入密码"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">确认密码</label>
+                  <input 
+                    type="password" 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={signupForm.confirmPassword}
+                    onChange={(e) => setSignupForm({...signupForm, confirmPassword: e.target.value})}
+                    placeholder="请再次输入密码"
+                  />
+                </div>
+                <button 
+                  onClick={handleSignup}
+                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  注册
+                </button>
+                <div className="text-center mt-4">
+                  <p className="text-slate-600">
+                    已有账号？
+                    <button 
+                      onClick={() => setCurrentView('login')}
+                      className="text-indigo-600 font-medium ml-1 hover:underline"
+                    >
+                      立即登录
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // 登录后显示应用主内容
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+        <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-slate-800">登录系统</h2>
+            <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
+          </div>
+          
+          {loginError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
+              {loginError}
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
+              <input 
+                type="text" 
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={loginForm.username}
+                onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
+                placeholder="请输入用户名"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+              <input 
+                type="password" 
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                placeholder="请输入密码"
+              />
+            </div>
+            <button 
+              onClick={handleLogin}
+              className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              登录
+            </button>
+            <div className="text-center mt-4">
+              <p className="text-slate-600">
+                还没有账号？
+                <button 
+                  onClick={() => setCurrentView('signup')}
+                  className="text-indigo-600 font-medium ml-1 hover:underline"
+                >
+                  立即注册
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row relative">
-      
       {/* --- MODALS --- */}
       
       {(activeModal === 'addStore' || activeModal === 'editStore') && (
-        <ModalBackdrop title={activeModal === 'addStore' ? "添加新店铺" : "编辑店铺信息"} onClose={() => setActiveModal(null)}>
-          <input className="w-full p-2 border rounded" placeholder="店铺名称" value={storeForm.storeName} onChange={e => setStoreForm({...storeForm, storeName: e.target.value})} />
-          <input className="w-full p-2 border rounded" placeholder="绑定公司名称" value={storeForm.companyName} onChange={e => setStoreForm({...storeForm, companyName: e.target.value})} />
-          <div>
-             <input className="w-full p-2 border rounded" type="number" placeholder="季度收入" value={storeForm.income} onChange={e => setStoreForm({...storeForm, income: e.target.value})} />
-          </div>
-          <div className="space-y-1 mt-2">
-             <label className="text-xs font-semibold text-slate-500">纳税人类型</label>
-             <SearchableSelect
-                options={[
-                  { value: StoreTaxType.GENERAL, label: StoreTaxType.GENERAL },
-                  { value: StoreTaxType.SMALL_SCALE, label: StoreTaxType.SMALL_SCALE }
-                ]}
-                value={storeForm.taxType}
-                onChange={val => setStoreForm({...storeForm, taxType: val as StoreTaxType})}
-                placeholder="选择类型"
-             />
-          </div>
-          <div className="space-y-1 mt-2">
-             <label className="text-xs font-semibold text-slate-500">销售平台</label>
-             <SearchableSelect
-                options={[
-                  { value: StorePlatform.TIANMAO, label: StorePlatform.TIANMAO },
-                  { value: StorePlatform.PINDUODUO, label: StorePlatform.PINDUODUO },
-                  { value: StorePlatform.DOUYIN, label: StorePlatform.DOUYIN },
-                  { value: StorePlatform.JD, label: StorePlatform.JD }
-                ]}
-                value={storeForm.platform}
-                onChange={val => setStoreForm({...storeForm, platform: val as StorePlatform})}
-                placeholder="选择平台"
-             />
-          </div>
-          <button onClick={handleSaveStore} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">确认{activeModal === 'addStore' ? '添加' : '保存'}</button>
-        </ModalBackdrop>
-      )}
+            <ModalBackdrop title={activeModal === 'addStore' ? "添加新店铺" : "编辑店铺信息"} onClose={() => setActiveModal(null)}>
+              <input className="w-full p-2 border rounded" placeholder="店铺名称" value={storeForm.storeName} onChange={e => setStoreForm({...storeForm, storeName: e.target.value})} />
+              <input className="w-full p-2 border rounded" placeholder="绑定公司名称" value={storeForm.companyName} onChange={e => setStoreForm({...storeForm, companyName: e.target.value})} />
+              <div>
+                 <input className="w-full p-2 border rounded" type="number" placeholder="季度收入" value={storeForm.income} onChange={e => setStoreForm({...storeForm, income: e.target.value})} />
+              </div>
+              <div className="space-y-1 mt-2">
+                 <label className="text-xs font-semibold text-slate-500">纳税人类型</label>
+                 <SearchableSelect
+                    options={[
+                      { value: StoreTaxType.GENERAL, label: StoreTaxType.GENERAL },
+                      { value: StoreTaxType.SMALL_SCALE, label: StoreTaxType.SMALL_SCALE }
+                    ]}
+                    value={storeForm.taxType}
+                    onChange={val => setStoreForm({...storeForm, taxType: val as StoreTaxType})}
+                    placeholder="选择类型"
+                 />
+              </div>
+              <div className="space-y-1 mt-2">
+                 <label className="text-xs font-semibold text-slate-500">销售平台</label>
+                 <SearchableSelect
+                    options={[
+                      { value: StorePlatform.TIANMAO, label: StorePlatform.TIANMAO },
+                      { value: StorePlatform.PINDUODUO, label: StorePlatform.PINDUODUO },
+                      { value: StorePlatform.DOUYIN, label: StorePlatform.DOUYIN },
+                      { value: StorePlatform.JD, label: StorePlatform.JD }
+                    ]}
+                    value={storeForm.platform}
+                    onChange={val => setStoreForm({...storeForm, platform: val as StorePlatform})}
+                    placeholder="选择平台"
+                 />
+              </div>
+              <button onClick={handleSaveStore} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">确认{activeModal === 'addStore' ? '添加' : '保存'}</button>
+            </ModalBackdrop>
+          )}
 
-      {activeModal === 'editExpenses' && (
-          <ModalBackdrop title="编辑各项成本支出" onClose={() => {setActiveModal(null); setEditingStoreId(null);}}>
-              <div className="grid grid-cols-2 gap-3">
+          {activeModal === 'editExpenses' && (
+              <ModalBackdrop title="编辑各项成本支出" onClose={() => {setActiveModal(null); setEditingStoreId(null);}}>
+                  <div className="grid grid-cols-2 gap-3">
                   <div>
                       <label className="text-xs text-slate-500 mb-1 block">运费</label>
                       <input className="w-full p-2 border rounded text-sm" type="number" value={expenseForm.shipping} onChange={e => setExpenseForm({...expenseForm, shipping: e.target.value})} />
@@ -3002,131 +3192,7 @@ function App() {
           </div>
         )}
         
-        {/* 登录页面 */}
-        {currentView === 'login' && (
-          <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-800">登录系统</h2>
-                <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
-              </div>
-              
-              {loginError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
-                  {loginError}
-                </div>
-              )}
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={loginForm.username}
-                    onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
-                    placeholder="请输入用户名"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
-                  <input 
-                    type="password" 
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-                    placeholder="请输入密码"
-                  />
-                </div>
-                <button 
-                  onClick={handleLogin}
-                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-                >
-                  登录
-                </button>
-                <div className="text-center mt-4">
-                  <p className="text-slate-600">
-                    还没有账号？
-                    <button 
-                      onClick={() => setCurrentView('signup')}
-                      className="text-indigo-600 font-medium ml-1 hover:underline"
-                    >
-                      立即注册
-                    </button>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* 注册页面 */}
-        {currentView === 'signup' && (
-          <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-800">注册账号</h2>
-                <p className="text-slate-500 mt-2">请输入您的用户名和密码</p>
-              </div>
-              
-              {signupError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4">
-                  {signupError}
-                </div>
-              )}
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">用户名</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={signupForm.username}
-                    onChange={(e) => setSignupForm({...signupForm, username: e.target.value})}
-                    placeholder="请输入用户名"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
-                  <input 
-                    type="password" 
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={signupForm.password}
-                    onChange={(e) => setSignupForm({...signupForm, password: e.target.value})}
-                    placeholder="请输入密码"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">确认密码</label>
-                  <input 
-                    type="password" 
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={signupForm.confirmPassword}
-                    onChange={(e) => setSignupForm({...signupForm, confirmPassword: e.target.value})}
-                    placeholder="请再次输入密码"
-                  />
-                </div>
-                <button 
-                  onClick={handleSignup}
-                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-                >
-                  注册
-                </button>
-                <div className="text-center mt-4">
-                  <p className="text-slate-600">
-                    已有账号？
-                    <button 
-                      onClick={() => setCurrentView('login')}
-                      className="text-indigo-600 font-medium ml-1 hover:underline"
-                    >
-                      立即登录
-                    </button>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
         
         {/* AI Chat View */}
         {currentView === 'chat' && (
@@ -3184,7 +3250,6 @@ function App() {
             />
           </div>
         )}
-      </div>
     </div>
   );
 }
