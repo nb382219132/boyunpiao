@@ -421,6 +421,8 @@ function App() {
       setIsAuthLoading(false);
       if (user) {
         setCurrentView('dashboard');
+        // 登录成功后重新加载数据，确保数据是最新的
+        loadData();
       } else {
         setCurrentView('login');
       }
@@ -1542,13 +1544,16 @@ function App() {
       return;
     }
 
+    setIsLoading(true);
     const { user, error } = await signIn(loginForm.username, loginForm.password);
     if (error) {
       setLoginError(error.message || '登录失败，请检查用户名和密码');
+      setIsLoading(false);
       return;
     }
     
     setLoginForm({ username: '', password: '' });
+    // isLoading会在loadData函数中设置为false
   };
 
   // 注册处理函数
@@ -2288,7 +2293,7 @@ function App() {
         )}
         
         {/* Dashboard View */}
-        {!isLoading && currentView === 'dashboard' && (
+        {currentView === 'dashboard' && (
           <div className="p-6 space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -2434,7 +2439,7 @@ function App() {
         )}
         
         {/* Stores View */}
-        {!isLoading && currentView === 'stores' && (
+        {currentView === 'stores' && (
           <div className="p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
               <div>
@@ -2523,7 +2528,7 @@ function App() {
         )}
         
         {/* Suppliers View */}
-        {!isLoading && currentView === 'suppliers' && (
+        {currentView === 'suppliers' && (
           <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-800">工厂管理</h2>
@@ -2592,7 +2597,7 @@ function App() {
         )}
         
         {/* Admin View */}
-        {!isLoading && currentView === 'admin' && (
+        {currentView === 'admin' && (
           <div className="p-6 space-y-6">
             <h2 className="text-xl font-bold text-slate-800">系统管理</h2>
             
@@ -3124,7 +3129,7 @@ function App() {
         )}
         
         {/* AI Chat View */}
-        {!isLoading && currentView === 'chat' && (
+        {currentView === 'chat' && (
           <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-800">AI税务优化分析</h2>
