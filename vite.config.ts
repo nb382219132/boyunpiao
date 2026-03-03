@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         }
       },
       // 开发环境使用相对路径，生产环境使用 GitHub Pages 路径
-      base: mode === 'production' ? '/invoice-management/' : './',
+      base: mode === 'production' ? '/boyunpiao/' : './',
       build: {
         rollupOptions: {
           input: {
