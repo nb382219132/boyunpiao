@@ -179,7 +179,8 @@ export const getCurrentUser = (): any => {
 
 export const subscribeToAuthChanges = (callback: (user: any) => void) => {
   if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured, skipping auth subscription');
+    console.warn('Supabase not configured, calling callback with null user');
+    callback(null);
     return { unsubscribe: () => {} };
   }
   
@@ -193,6 +194,7 @@ export const subscribeToAuthChanges = (callback: (user: any) => void) => {
     return subscription;
   } catch (error) {
     console.error('Failed to subscribe to auth changes:', error);
+    callback(null);
     return { unsubscribe: () => {} };
   }
 };
