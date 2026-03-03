@@ -1978,14 +1978,12 @@ function App() {
 
   // 未登录时显示登录或注册页面
   if (!user) {
-    // 如果currentView不是login或signup，强制设置为login
-    if (currentView !== 'login' && currentView !== 'signup') {
-      setCurrentView('login');
-    }
+    // 如果currentView不是login或signup，显示登录页面
+    const viewToShow = currentView === 'signup' ? 'signup' : 'login';
     
     return (
       <>
-        {currentView === 'login' && (
+        {viewToShow === 'login' && (
           <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
               <div className="text-center mb-8">
@@ -2042,7 +2040,7 @@ function App() {
           </div>
         )}
         
-        {currentView === 'signup' && (
+        {viewToShow === 'signup' && (
           <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
               <div className="text-center mb-8">
