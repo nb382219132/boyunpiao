@@ -1978,6 +1978,11 @@ function App() {
 
   // 未登录时显示登录或注册页面
   if (!user) {
+    // 如果currentView不是login或signup，强制设置为login
+    if (currentView !== 'login' && currentView !== 'signup') {
+      setCurrentView('login');
+    }
+    
     return (
       <>
         {currentView === 'login' && (
