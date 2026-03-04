@@ -440,7 +440,7 @@ export const fetchStores = async (): Promise<StoreCompany[]> => {
         throw error;
       }
       
-      return data as StoreCompany[];
+      return (data || []) as StoreCompany[];
     });
   } catch (error) {
     console.error('Failed to fetch stores:', error);
@@ -511,7 +511,7 @@ export const fetchSuppliers = async (): Promise<SupplierEntity[]> => {
         throw error;
       }
       
-      return data as SupplierEntity[];
+      return (data || []) as SupplierEntity[];
     });
   } catch (error) {
     console.error('Failed to fetch suppliers:', error);
@@ -582,7 +582,7 @@ export const fetchInvoices = async (): Promise<InvoiceRecord[]> => {
         throw error;
       }
       
-      return data as InvoiceRecord[];
+      return (data || []) as InvoiceRecord[];
     });
   } catch (error) {
     console.error('Failed to fetch invoices:', error);
@@ -653,7 +653,7 @@ export const fetchPayments = async (): Promise<PaymentRecord[]> => {
         throw error;
       }
       
-      return data as PaymentRecord[];
+      return (data || []) as PaymentRecord[];
     });
   } catch (error) {
     console.error('Failed to fetch payments:', error);
@@ -1224,7 +1224,7 @@ export const getUsers = async (): Promise<any[]> => {
       return [];
     }
     
-    return data;
+    return data || [];
   } catch (error) {
     console.error('Failed to fetch users:', error);
     return [];
