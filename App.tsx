@@ -2706,17 +2706,6 @@ function App() {
             <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => setAdminActiveTab('users')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    adminActiveTab === 'users'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  <Users size={16} />
-                  <span>用户管理</span>
-                </button>
-                <button
                   onClick={() => setAdminActiveTab('quarters')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     adminActiveTab === 'quarters'
@@ -2770,6 +2759,17 @@ function App() {
                 >
                   <CreditCard size={16} />
                   <span>货款记录</span>
+                </button>
+                <button
+                  onClick={() => setAdminActiveTab('users')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'users'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Users size={16} />
+                  <span>用户管理</span>
                 </button>
               </div>
             </div>
@@ -3166,67 +3166,6 @@ function App() {
                     </div>
                   ));
                 })()}
-              </div>
-            </div>
-            )}
-            
-            {/* System Backup Section */}
-            {adminActiveTab === 'users' && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">系统备份与恢复</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <FileText size={16} />
-                    <span>导出数据</span>
-                  </h4>
-                  <p className="text-xs text-slate-500 mb-3">导出完整的系统数据，包括所有季度的历史记录</p>
-                  <button onClick={handleExportData} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-                    <Download size={14} />
-                    <span>导出系统数据</span>
-                  </button>
-                </div>
-                
-                <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <Building2 size={16} />
-                    <span>导出店铺数据</span>
-                  </h4>
-                  <p className="text-xs text-slate-500 mb-3">导出店铺相关的数据，包括发票明细</p>
-                  <button onClick={handleExportStores} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
-                    <Download size={14} />
-                    <span>导出店铺数据</span>
-                  </button>
-                </div>
-                
-                <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <Users size={16} />
-                    <span>导出工厂数据</span>
-                  </h4>
-                  <p className="text-xs text-slate-500 mb-3">导出工厂相关的数据，包括开票和付款明细</p>
-                  <button onClick={handleExportSuppliers} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-                    <Download size={14} />
-                    <span>导出工厂数据</span>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="mt-4 p-4 border-2 border-dashed border-slate-300 rounded-lg">
-                <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                  <FilePlus size={16} />
-                  <span>恢复数据</span>
-                </h4>
-                <p className="text-xs text-slate-500 mb-3">从备份文件恢复系统数据，这将覆盖当前所有数据</p>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="file" 
-                    accept=".json" 
-                    onChange={handleImportData}
-                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                  <span className="text-xs text-slate-400">支持 .json 格式的备份文件</span>
-                </div>
               </div>
             </div>
             )}
