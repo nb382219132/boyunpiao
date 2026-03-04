@@ -164,6 +164,7 @@ function App() {
   const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
   const [storeSearchTerm, setStoreSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState('quarter-management');
+  const [adminActiveTab, setAdminActiveTab] = useState<'users' | 'quarters' | 'stores' | 'suppliers' | 'invoices' | 'payments'>('users');
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('');
   const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
   
@@ -2745,9 +2746,82 @@ function App() {
         {/* Admin View */}
         {currentView === 'admin' && (
           <div className="p-6 space-y-6">
-            <h2 className="text-xl font-bold text-slate-800">系统管理</h2>
+            <h2 className="text-xl font-bold text-slate-800">管理员设置</h2>
+            
+            {/* 浮窗导航按钮 */}
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setAdminActiveTab('users')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'users'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Users size={16} />
+                  <span>用户管理</span>
+                </button>
+                <button
+                  onClick={() => setAdminActiveTab('quarters')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'quarters'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Calendar size={16} />
+                  <span>季度管理</span>
+                </button>
+                <button
+                  onClick={() => setAdminActiveTab('stores')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'stores'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Store size={16} />
+                  <span>店铺管理</span>
+                </button>
+                <button
+                  onClick={() => setAdminActiveTab('suppliers')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'suppliers'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Building2 size={16} />
+                  <span>工厂管理</span>
+                </button>
+                <button
+                  onClick={() => setAdminActiveTab('invoices')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'invoices'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <FileText size={16} />
+                  <span>开票记录</span>
+                </button>
+                <button
+                  onClick={() => setAdminActiveTab('payments')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    adminActiveTab === 'payments'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <CreditCard size={16} />
+                  <span>货款记录</span>
+                </button>
+              </div>
+            </div>
             
             {/* 用户管理 Section */}
+            {adminActiveTab === 'users' && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-slate-800">用户管理</h3>
@@ -2887,8 +2961,117 @@ function App() {
                 </div>
               )}
             </div>
+            )}
+            
+            {/* 季度管理 Section */}
+            {adminActiveTab === 'quarters' && (
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">季度管理</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-slate-500">当前季度</p>
+                    <p className="text-xl font-bold text-slate-800">{currentQuarter}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                      开始新季度
+                    </button>
+                    <button className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">
+                      季度历史记录
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4 border border-slate-200 rounded-lg">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-2">可用季度</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {availableQuarters.map(quarter => (
+                      <span key={quarter} className={`px-3 py-1 rounded-full text-sm ${quarter === currentQuarter ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'}`}>
+                        {quarter}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
+            
+            {/* 店铺管理 Section */}
+            {adminActiveTab === 'stores' && (
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">店铺管理</h3>
+                <button onClick={handleOpenAddStore} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                  <Plus size={14} />
+                  <span>添加店铺</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">店铺名称</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">公司名称</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">收入</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-500">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {stores.map(store => (
+                      <tr key={store.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-sm text-slate-800">{store.storeName}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{store.companyName}</td>
+                        <td className="px-4 py-3 text-sm text-slate-800 text-right">¥{store.income.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-center">
+                          <button onClick={() => handleDeleteStore(store.id)} className="text-red-600 hover:text-red-800 text-sm">删除</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            )}
+            
+            {/* 工厂管理 Section */}
+            {adminActiveTab === 'suppliers' && (
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">工厂管理</h3>
+                <button onClick={handleOpenAddSupplier} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                  <Plus size={14} />
+                  <span>添加工厂</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">工厂名称</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">负责人</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">开票限额</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-500">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {suppliers.map(supplier => (
+                      <tr key={supplier.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-sm text-slate-800">{supplier.name}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{supplier.owner}</td>
+                        <td className="px-4 py-3 text-sm text-slate-800 text-right">¥{supplier.limit.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-center">
+                          <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-600 hover:text-red-800 text-sm">删除</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            )}
             
             {/* System Backup Section */}
+            {adminActiveTab === 'users' && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">系统备份与恢复</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2946,8 +3129,10 @@ function App() {
                 </div>
               </div>
             </div>
+            )}
             
-            {/* Invoice Records Section */}
+            {/* 开票记录 Section */}
+            {adminActiveTab === 'invoices' && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-slate-800">所有发票记录</h3>
@@ -3070,8 +3255,10 @@ function App() {
                 </div>
               </div>
             </div>
+            )}
             
-            {/* Payments Section */}
+            {/* 货款记录 Section */}
+            {adminActiveTab === 'payments' && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-slate-800">工厂货款支付记录</h3>
@@ -3145,6 +3332,7 @@ function App() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
         
