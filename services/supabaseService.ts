@@ -186,18 +186,19 @@ export const subscribeToAuthChanges = (callback: (user: any) => void) => {
   
   try {
     const client = getSupabaseClient();
-    let isFirstCall = true;
+    let hasCalledBack = false;
     
-    // 获取当前会话状态，只调用一次callback
+    // 获取当前会话状态
     client.auth.getSession().then(({ data: { session } }) => {
-      if (isFirstCall) {
-        isFirstCall = false;
+      console.log('getSession result:', session?.user?.email || 'no session');
+      if (!hasCalledBack) {
+        hasCalledBack = true;
         callback(session?.user || null);
       }
     }).catch((error) => {
       console.error('Failed to get session:', error);
-      if (isFirstCall) {
-        isFirstCall = false;
+      if (!hasCalledBack) {
+        hasCalledBack = true;
         callback(null);
       }
     });
@@ -205,12 +206,9 @@ export const subscribeToAuthChanges = (callback: (user: any) => void) => {
     // 订阅认证状态变化
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      // 对于INITIAL_SESSION事件，如果已经调用过callback，则不再调用
-      if (event === 'INITIAL_SESSION' && !isFirstCall) {
-        return;
-      }
-      // 对于其他事件，直接调用callback
-      if (event !== 'INITIAL_SESSION') {
+      // 总是调用callback，但避免重复调用
+      if (!hasCalledBack || event !== 'INITIAL_SESSION') {
+        hasCalledBack = true;
         callback(session?.user || null);
       }
     });
