@@ -1855,11 +1855,14 @@ function App() {
   }, {} as Record<string, SupplierEntity[]>);
 
   // Filter suppliers based on search term
-  const filteredSuppliers = suppliers.filter(supplier => 
-    supplier.owner.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
-    supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
-    supplier.type.toLowerCase().includes(supplierSearchTerm.toLowerCase())
-  );
+  const filteredSuppliers = suppliers.filter(supplier => {
+    const searchTerm = supplierSearchTerm.toLowerCase();
+    return (
+      (supplier.owner?.toLowerCase() || '').includes(searchTerm) ||
+      (supplier.name?.toLowerCase() || '').includes(searchTerm) ||
+      (supplier.type?.toLowerCase() || '').includes(searchTerm)
+    );
+  });
 
   // Group filtered suppliers by owner for display
   const filteredGroupedSuppliersMap = filteredSuppliers.reduce((acc, supplier) => {
