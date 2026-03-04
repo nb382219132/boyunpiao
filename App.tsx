@@ -2185,7 +2185,6 @@ function App() {
               <div className="space-y-4">
                 {/* Company Name */}
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">营业执照名称</label>
                   <input
                     type="text"
                     placeholder="公司名称"
