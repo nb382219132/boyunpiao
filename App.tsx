@@ -2128,9 +2128,12 @@ function App() {
                 {/* Tabs */}
                 <div className="flex gap-2 mb-3">
                   <button
-                    onClick={() => setSupplierForm({...supplierForm, owner: ''})}
+                    onClick={() => {
+                      setIsNewFactory(true);
+                      setSupplierForm({...supplierForm, owner: ''});
+                    }}
                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                      !factoryOwners.includes(supplierForm.owner) && supplierForm.owner !== ''
+                      isNewFactory
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                     }`}
@@ -2138,9 +2141,12 @@ function App() {
                     新增工厂
                   </button>
                   <button
-                    onClick={() => setSupplierForm({...supplierForm, owner: factoryOwners[0] || ''})}
+                    onClick={() => {
+                      setIsNewFactory(false);
+                      setSupplierForm({...supplierForm, owner: factoryOwners[0] || ''});
+                    }}
                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                      factoryOwners.includes(supplierForm.owner) || supplierForm.owner === ''
+                      !isNewFactory
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                     }`}
@@ -2149,14 +2155,23 @@ function App() {
                   </button>
                 </div>
                 
-                {/* Factory Input */}
-                <input
-                  type="text"
-                  placeholder="输入工厂负责人姓名 (法人)"
-                  value={supplierForm.owner}
-                  onChange={e => setSupplierForm({...supplierForm, owner: e.target.value})}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-                />
+                {/* Factory Input - Show text input for new factory, dropdown for existing */}
+                {isNewFactory ? (
+                  <input
+                    type="text"
+                    placeholder="输入工厂负责人姓名 (法人)"
+                    value={supplierForm.owner}
+                    onChange={e => setSupplierForm({...supplierForm, owner: e.target.value})}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                  />
+                ) : (
+                  <SearchableSelect
+                    options={factoryOwners.filter(owner => owner && owner.trim() !== '').map(owner => ({ value: owner, label: owner }))}
+                    value={supplierForm.owner}
+                    onChange={(val) => setSupplierForm({...supplierForm, owner: val || ''})}
+                    placeholder="选择已有工厂"
+                  />
+                )}
               </div>
             )}
             
@@ -2187,7 +2202,9 @@ function App() {
                     <SearchableSelect
                       options={[
                         { value: EntityType.INDIVIDUAL, label: '个体工商户' },
-                        { value: EntityType.ENTERPRISE, label: '企业' }
+                        { value: EntityType.LARGE_INDIVIDUAL, label: '大额个体户' },
+                        { value: EntityType.COMPANY, label: '小规模纳税人' },
+                        { value: EntityType.GENERAL, label: '一般纳税人' }
                       ]}
                       value={supplierForm.type}
                       onChange={val => setSupplierForm({...supplierForm, type: val as EntityType})}
