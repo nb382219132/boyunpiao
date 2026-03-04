@@ -2982,7 +2982,7 @@ function App() {
                       <tr key={store.id} className="hover:bg-slate-50">
                         <td className="px-4 py-3 text-sm text-slate-800">{store.storeName}</td>
                         <td className="px-4 py-3 text-sm text-slate-600">{store.companyName}</td>
-                        <td className="px-4 py-3 text-sm text-slate-800 text-right">¥{store.income.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-sm text-slate-800 text-right">¥{(store.quarterIncome || 0).toLocaleString()}</td>
                         <td className="px-4 py-3 text-center">
                           <button onClick={() => handleDeleteStore(store.id)} className="text-red-600 hover:text-red-800 text-sm">删除</button>
                         </td>
