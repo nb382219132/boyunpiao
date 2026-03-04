@@ -774,8 +774,8 @@ function App() {
 
   // Filter stores based on search term, platform, and user's platform permissions
   const filteredStores = stores.filter(store => {
-    const matchesSearch = store.storeName.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
-      store.companyName.toLowerCase().includes(storeSearchTerm.toLowerCase());
+    const matchesSearch = (store.storeName?.toLowerCase() || '').includes(storeSearchTerm.toLowerCase()) ||
+      (store.companyName?.toLowerCase() || '').includes(storeSearchTerm.toLowerCase());
     const matchesPlatform = selectedPlatform === 'all' || store.platform === selectedPlatform;
     
     // 检查用户是否有权限查看该店铺的平台
