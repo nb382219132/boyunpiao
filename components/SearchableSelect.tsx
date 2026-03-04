@@ -45,11 +45,11 @@ const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placehold
   }, []);
 
   const filteredOptions = safeOptions.filter(opt =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+    opt.label && opt.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Check if current search term is a custom value (not in options)
-  const isCustomValue = allowCustomValues && searchTerm && !safeOptions.some(o => o.label.toLowerCase() === searchTerm.toLowerCase());
+  const isCustomValue = allowCustomValues && searchTerm && !safeOptions.some(o => o.label && o.label.toLowerCase() === searchTerm.toLowerCase());
 
   const handleSelect = (val: string) => {
     onChange(val);
