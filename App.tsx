@@ -1506,9 +1506,19 @@ function App() {
     }
   };
 
-  const handleDeleteEntity = (id: string) => {
+  const handleDeleteEntity = async (id: string) => {
+    if (!confirm('确认删除此开票主体？')) return;
+    
     const updatedSuppliers = suppliers.filter(s => s.id !== id);
     setSuppliers(updatedSuppliers);
+    
+    // 保存到 Supabase
+    try {
+      await saveSuppliers(updatedSuppliers);
+      console.log('Suppliers saved to Supabase after delete');
+    } catch (error) {
+      console.error('Error saving suppliers after delete:', error);
+    }
   };
 
   const handleDeletePaymentRecord = (paymentId: string) => {
@@ -2733,8 +2743,9 @@ function App() {
                   <div className="divide-y divide-slate-100">
                     {suppliers.map(supplier => {
                       const used = getSupplierInvoicedTotal(supplier.id);
-                      const remaining = supplier.limit - used;
-                      const percentage = Math.min(100, (used / supplier.limit) * 100);
+                      const limit = supplier.limit || supplier.quarterlyLimit || 280000;
+                      const remaining = limit - used;
+                      const percentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
                       return (
                         <div key={supplier.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
                           <div className="flex items-center gap-4">
@@ -2745,7 +2756,7 @@ function App() {
                           </div>
                           <div className="flex items-center gap-6">
                             <div className="text-right">
-                              <div className="text-sm text-slate-600">限额: ¥{supplier.limit.toLocaleString()}</div>
+                              <div className="text-sm text-slate-600">限额: ¥{limit.toLocaleString()}</div>
                               <div className="text-xs text-slate-500">已用: ¥{used.toLocaleString()}</div>
                             </div>
                             <div className="w-32">
@@ -3177,7 +3188,7 @@ function App() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <button className="text-sm text-blue-600 hover:text-blue-800">编辑</button>
-                                <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-sm text-red-600 hover:text-red-800">删除</button>
+                                <button onClick={() => handleDeleteEntity(supplier.id)} className="text-sm text-red-600 hover:text-red-800">删除</button>
                               </div>
                             </div>
                           ))}
