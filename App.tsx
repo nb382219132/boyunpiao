@@ -2116,41 +2116,105 @@ function App() {
 
       {(activeModal === 'addSupplier' || activeModal === 'editEntity') && (
         <ModalBackdrop title={activeModal === 'addSupplier' ? "添加工厂及开票主体" : "编辑开票主体"} onClose={() => setActiveModal(null)}>
-          <div className="space-y-4">
-             {/* Factory Section - Only show for Add mode or if creating new */}
+          <div className="space-y-6">
+            {/* Factory Section - Only show for Add mode */}
             {activeModal === 'addSupplier' && (
-              <div>
-                <label className="text-xs text-slate-500 mb-1 block">工厂负责人</label>
-                <SearchableSelect
-                  options={factoryOwners.filter(owner => owner && owner.trim() !== '').map(owner => ({ value: owner, label: owner }))}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <User size={18} className="text-indigo-600" />
+                  <span className="font-semibold text-slate-800">1. 所属工厂 (法人)</span>
+                </div>
+                
+                {/* Tabs */}
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setSupplierForm({...supplierForm, owner: ''})}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      !factoryOwners.includes(supplierForm.owner) && supplierForm.owner !== ''
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    新增工厂
+                  </button>
+                  <button
+                    onClick={() => setSupplierForm({...supplierForm, owner: factoryOwners[0] || ''})}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      factoryOwners.includes(supplierForm.owner) || supplierForm.owner === ''
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    选择已有
+                  </button>
+                </div>
+                
+                {/* Factory Input */}
+                <input
+                  type="text"
+                  placeholder="输入工厂负责人姓名 (法人)"
                   value={supplierForm.owner}
-                  onChange={(val) => setSupplierForm({...supplierForm, owner: val || ''})}
-                  placeholder="选择现有工厂或直接输入新工厂名称"
-                  allowCustomValues
+                  onChange={e => setSupplierForm({...supplierForm, owner: e.target.value})}
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
                 />
               </div>
             )}
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">开票主体名称</label>
-              <input className="w-full p-2 border rounded" placeholder="开票主体名称" value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} />
+            
+            {/* Entity Section */}
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Building2 size={18} className="text-indigo-600" />
+                <span className="font-semibold text-slate-800">2. 开票主体 (公司/个体户)</span>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Company Name */}
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block">营业执照名称</label>
+                  <input
+                    type="text"
+                    placeholder="公司名称"
+                    value={supplierForm.name}
+                    onChange={e => setSupplierForm({...supplierForm, name: e.target.value})}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                  />
+                </div>
+                
+                {/* Type and Limit Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">主体类型</label>
+                    <SearchableSelect
+                      options={[
+                        { value: EntityType.INDIVIDUAL, label: '个体工商户' },
+                        { value: EntityType.ENTERPRISE, label: '企业' }
+                      ]}
+                      value={supplierForm.type}
+                      onChange={val => setSupplierForm({...supplierForm, type: val as EntityType})}
+                      placeholder="选择类型"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">季度限额 (元)</label>
+                    <input
+                      type="number"
+                      placeholder="280000"
+                      value={supplierForm.limit}
+                      onChange={e => setSupplierForm({...supplierForm, limit: parseInt(e.target.value) || 280000})}
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">开票主体类型</label>
-              <SearchableSelect
-                options={[
-                  { value: EntityType.INDIVIDUAL, label: EntityType.INDIVIDUAL },
-                  { value: EntityType.ENTERPRISE, label: EntityType.ENTERPRISE }
-                ]}
-                value={supplierForm.type}
-                onChange={val => setSupplierForm({...supplierForm, type: val as EntityType})}
-                placeholder="选择类型"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">季度限额 (元)</label>
-              <input className="w-full p-2 border rounded" type="number" placeholder="季度限额" value={supplierForm.limit} onChange={e => setSupplierForm({...supplierForm, limit: parseInt(e.target.value) || 280000})} />
-            </div>
-            <button onClick={handleSaveSupplier} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">确认{activeModal === 'addSupplier' ? '添加' : '保存'}</button>
+            
+            {/* Submit Button */}
+            <button
+              onClick={handleSaveSupplier}
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              确认添加
+            </button>
           </div>
         </ModalBackdrop>
       )}
