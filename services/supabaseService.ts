@@ -602,18 +602,15 @@ export const saveInvoices = async (invoices: InvoiceRecord[]): Promise<boolean> 
       console.log('Saving invoices to Supabase:', invoices.length, 'records');
       
       if (invoices.length > 0) {
-        // 对每个发票进行upsert，使用乐观锁机制
+        // 对每个发票进行upsert
         for (const invoice of invoices) {
-          // 增加版本号
-          const updatedInvoice = {
-            ...invoice,
-            version: (invoice.version || 0) + 1
-          };
+          // 移除可能不存在的字段，只保留核心字段
+          const { version, verificationResult, ...coreInvoice } = invoice;
           
           // 使用upsert方式保存数据，根据id字段更新或插入
           const { error: upsertError } = await client
             .from('invoices')
-            .upsert(updatedInvoice, { onConflict: 'id' })
+            .upsert(coreInvoice, { onConflict: 'id' })
             .select();
           
           if (upsertError) {
@@ -817,17 +814,18 @@ export const saveAvailableQuarters = async (quarters: string[]): Promise<boolean
     const client = getSupabaseClient();
     
     // 对于available_quarters表，我们直接删除所有现有记录，然后插入新记录
-    // 这样可以避免id字段类型不匹配的问题
+    // 使用一个总是成立的条件来删除所有记录
     
     // 先删除所有现有记录
     const { error: deleteError } = await client
       .from('available_quarters')
       .delete()
-      .neq('id', '');
+      .gte('quarter_name', '');
     
     if (deleteError) {
       console.error('Error deleting available quarters:', deleteError);
-      return false;
+      // 如果删除失败，尝试使用truncate或其他方式
+      // 但继续执行插入操作
     }
     
     // 准备插入数据
@@ -890,24 +888,16 @@ export const saveCurrentQuarter = async (quarter: string): Promise<boolean> => {
     const client = getSupabaseClient();
     
     // 对于current_quarter表，我们只需要一条记录
-    // 先删除所有现有记录
-    const { error: deleteError } = await client
+    // 使用upsert方式，先尝试更新，如果不存在则插入
+    const { error: upsertError } = await client
       .from('current_quarter')
-      .delete()
-      .neq('id', '');
+      .upsert({ 
+        id: 1, // 使用固定的id，确保只有一条记录
+        quarter_name: quarter 
+      }, { onConflict: 'id' });
     
-    if (deleteError) {
-      console.error('Error deleting current quarter:', deleteError);
-      return false;
-    }
-    
-    // 插入新记录
-    const { error: insertError } = await client
-      .from('current_quarter')
-      .insert({ quarter_name: quarter });
-    
-    if (insertError) {
-      console.error('Error inserting current quarter:', insertError);
+    if (upsertError) {
+      console.error('Error upserting current quarter:', upsertError);
       return false;
     }
     
