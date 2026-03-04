@@ -2731,15 +2731,50 @@ function App() {
                     </div>
                   </div>
                   <div className="divide-y divide-slate-100">
-                    {suppliers.map(supplier => (
-                      <SupplierRow 
-                        key={supplier.id}
-                        supplier={supplier}
-                        used={getSupplierInvoicedTotal(supplier.id)}
-                        onEdit={() => handleOpenEditEntity(supplier)}
-                        onDelete={() => handleDeleteEntity(supplier.id)}
-                      />
-                    ))}
+                    {suppliers.map(supplier => {
+                      const used = getSupplierInvoicedTotal(supplier.id);
+                      const remaining = supplier.limit - used;
+                      const percentage = Math.min(100, (used / supplier.limit) * 100);
+                      return (
+                        <div key={supplier.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <div className="font-medium text-slate-800">{supplier.name}</div>
+                              <div className="text-xs text-slate-500">{supplier.type === 'individual' ? '个体工商户' : supplier.type === 'company' ? '企业' : '大额个体户'}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <div className="text-sm text-slate-600">限额: ¥{supplier.limit.toLocaleString()}</div>
+                              <div className="text-xs text-slate-500">已用: ¥{used.toLocaleString()}</div>
+                            </div>
+                            <div className="w-32">
+                              <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-orange-500' : 'bg-green-500'}`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <div className="text-xs text-right mt-1 text-slate-500">{percentage.toFixed(1)}%</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => handleOpenEditEntity(supplier)}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                编辑
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteEntity(supplier.id)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                删除
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
