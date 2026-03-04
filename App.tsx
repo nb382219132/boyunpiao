@@ -2580,36 +2580,7 @@ function App() {
               </div>
             </div>
             
-            {/* Quick Actions Section */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">快捷操作</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button onClick={handleOpenAddStore} className="flex flex-col items-center gap-2 p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
-                    <Store size={24} className="text-green-700" />
-                  </div>
-                  <span className="text-sm font-medium text-green-900">新增店铺</span>
-                </button>
-                <button onClick={handleOpenAddSupplier} className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
-                    <Users size={24} className="text-blue-700" />
-                  </div>
-                  <span className="text-sm font-medium text-blue-900">新增工厂</span>
-                </button>
-                <button onClick={() => setActiveModal('addInvoice')} className="flex flex-col items-center gap-2 p-4 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-indigo-200 flex items-center justify-center">
-                    <FilePlus size={24} className="text-indigo-700" />
-                  </div>
-                  <span className="text-sm font-medium text-indigo-900">添加发票</span>
-                </button>
-                <button onClick={() => setActiveModal('addPayment')} className="flex flex-col items-center gap-2 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-purple-200 flex items-center justify-center">
-                    <CreditCard size={24} className="text-purple-700" />
-                  </div>
-                  <span className="text-sm font-medium text-purple-900">添加付款</span>
-                </button>
-              </div>
-            </div>
+
           </div>
         )}
         
