@@ -460,18 +460,15 @@ export const saveStores = async (stores: StoreCompany[]): Promise<boolean> => {
       console.log('Saving stores to Supabase:', stores.length, 'records');
       
       if (stores.length > 0) {
-        // 对每个店铺进行upsert，使用乐观锁机制
+        // 对每个店铺进行upsert
         for (const store of stores) {
-          // 增加版本号
-          const updatedStore = {
-            ...store,
-            version: (store.version || 0) + 1
-          };
+          // 移除可能不存在的字段，只保留核心字段
+          const { version, expenseBreakdown, ...coreStore } = store;
           
           // 使用upsert方式保存数据，根据id字段更新或插入
           const { error: upsertError } = await client
             .from('stores')
-            .upsert(updatedStore, { onConflict: 'id' })
+            .upsert(coreStore, { onConflict: 'id' })
             .select();
           
           if (upsertError) {
@@ -531,18 +528,15 @@ export const saveSuppliers = async (suppliers: SupplierEntity[]): Promise<boolea
       console.log('Saving suppliers to Supabase:', suppliers.length, 'records');
       
       if (suppliers.length > 0) {
-        // 对每个供应商进行upsert，使用乐观锁机制
+        // 对每个供应商进行upsert
         for (const supplier of suppliers) {
-          // 增加版本号
-          const updatedSupplier = {
-            ...supplier,
-            version: (supplier.version || 0) + 1
-          };
+          // 移除可能不存在的字段，只保留核心字段
+          const { version, ...coreSupplier } = supplier;
           
           // 使用upsert方式保存数据，根据id字段更新或插入
           const { error: upsertError } = await client
             .from('suppliers')
-            .upsert(updatedSupplier, { onConflict: 'id' })
+            .upsert(coreSupplier, { onConflict: 'id' })
             .select();
           
           if (upsertError) {
