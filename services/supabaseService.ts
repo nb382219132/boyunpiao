@@ -186,16 +186,28 @@ export const subscribeToAuthChanges = (callback: (user: any) => void) => {
   
   try {
     const client = getSupabaseClient();
+    let isFirstCall = true;
     
+    // 获取当前会话状态，只调用一次callback
     client.auth.getSession().then(({ data: { session } }) => {
-      callback(session?.user || null);
+      if (isFirstCall) {
+        isFirstCall = false;
+        callback(session?.user || null);
+      }
     }).catch((error) => {
       console.error('Failed to get session:', error);
-      callback(null);
+      if (isFirstCall) {
+        isFirstCall = false;
+        callback(null);
+      }
     });
     
+    // 订阅认证状态变化
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      callback(session?.user || null);
+      // 只有当事件不是INITIAL_SESSION时才调用callback，避免重复调用
+      if (event !== 'INITIAL_SESSION') {
+        callback(session?.user || null);
+      }
     });
     
     return subscription;
