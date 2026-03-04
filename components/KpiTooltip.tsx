@@ -14,7 +14,7 @@ interface Props {
 }
 
 const KpiTooltip: React.FC<Props> = ({ title, items, colorClass = 'bg-indigo-500', valuePrefix = '¥' }) => {
-  if (items.length === 0) return null;
+  if (!items || items.length === 0) return null;
   const maxVal = Math.max(...items.map(i => i.value));
 
   return (
