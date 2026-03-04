@@ -22,7 +22,10 @@ const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placehold
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const selectedOption = options.find(o => o.value === value);
+  // Ensure options is always an array
+  const safeOptions = options || [];
+  
+  const selectedOption = safeOptions.find(o => o.value === value);
 
   useEffect(() => {
     // If closed, display the selected option's label
@@ -41,12 +44,12 @@ const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placehold
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(opt =>
+  const filteredOptions = safeOptions.filter(opt =>
     opt.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Check if current search term is a custom value (not in options)
-  const isCustomValue = allowCustomValues && searchTerm && !options.some(o => o.label.toLowerCase() === searchTerm.toLowerCase());
+  const isCustomValue = allowCustomValues && searchTerm && !safeOptions.some(o => o.label.toLowerCase() === searchTerm.toLowerCase());
 
   const handleSelect = (val: string) => {
     onChange(val);
