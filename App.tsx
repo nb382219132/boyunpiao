@@ -173,6 +173,9 @@ function App() {
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<string>('all');
   const [verificationFilter, setVerificationFilter] = useState<string>('all');
   
+  // Date filter state for invoices
+  const [invoiceDateRange, setInvoiceDateRange] = useState<{start: string; end: string}>({start: '', end: ''});
+  
   // Pagination state for different tables
   const [invoiceCurrentPage, setInvoiceCurrentPage] = useState<number>(1);
   const [invoicePageSize, setInvoicePageSize] = useState<number>(20);
@@ -1776,17 +1779,25 @@ function App() {
   
   const filteredInvoices = invoices
     .filter(invoice => {
-      // Search term filter
+      // Search term filter - 支持开票金额、开票主体、店铺、工厂搜索
       if (invoiceSearchTerm) {
         const store = stores.find(s => s.id === invoice.storeId);
         const supplier = suppliers.find(s => s.id === invoice.supplierId);
+        const factoryOwner = supplier?.owner || '';
         const searchLower = invoiceSearchTerm.toLowerCase();
+        const searchTermNum = parseFloat(invoiceSearchTerm);
         
         const matchesSearch = (
-          store?.storeName.toLowerCase().includes(searchLower) ||
-          supplier?.name.toLowerCase().includes(searchLower) ||
-          supplier?.owner.toLowerCase().includes(searchLower) ||
+          // 搜索店铺名称
+          store?.storeName?.toLowerCase().includes(searchLower) ||
+          // 搜索开票主体名称
+          supplier?.name?.toLowerCase().includes(searchLower) ||
+          // 搜索工厂（负责人）
+          factoryOwner?.toLowerCase().includes(searchLower) ||
+          // 搜索金额（支持精确匹配和包含匹配）
           invoice.amount.toString().includes(invoiceSearchTerm) ||
+          (!isNaN(searchTermNum) && Math.abs(invoice.amount - searchTermNum) < 0.01) ||
+          // 搜索日期
           invoice.date.includes(invoiceSearchTerm)
         );
         
@@ -1797,6 +1808,16 @@ function App() {
       if (invoiceStatusFilter !== 'all') {
         const actualStatus = invoice.status || 'pending';
         if (actualStatus !== invoiceStatusFilter) return false;
+      }
+      
+      // Date range filter - 日期范围筛选
+      if (invoiceDateRange.start || invoiceDateRange.end) {
+        const invoiceDate = new Date(invoice.date);
+        const startDate = invoiceDateRange.start ? new Date(invoiceDateRange.start) : null;
+        const endDate = invoiceDateRange.end ? new Date(invoiceDateRange.end) : null;
+        
+        if (startDate && invoiceDate < startDate) return false;
+        if (endDate && invoiceDate > endDate) return false;
       }
       
       return true;
@@ -3353,6 +3374,7 @@ function App() {
         {/* User Invoices View */}
         {currentView === 'userInvoices' && (
           <div className="p-6 space-y-6">
+            {/* Header with title and add button */}
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-800">开票记录</h2>
               <button onClick={() => setActiveModal('addInvoice')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
@@ -3361,44 +3383,138 @@ function App() {
               </button>
             </div>
             
+            {/* Search and Filter Bar */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Search Box */}
+                <div className="flex-1 min-w-[300px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      type="text"
+                      placeholder="搜索：店铺、工厂、开票主体或金额"
+                      value={invoiceSearchTerm}
+                      onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                {/* Date Range Filter */}
+                <div className="flex items-center gap-2">
+                  <Calendar className="text-slate-400" size={18} />
+                  <span className="text-sm text-slate-600">日期范围：</span>
+                  <input
+                    type="date"
+                    value={invoiceDateRange.start}
+                    onChange={(e) => setInvoiceDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-slate-400">至</span>
+                  <input
+                    type="date"
+                    value={invoiceDateRange.end}
+                    onChange={(e) => setInvoiceDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {(invoiceDateRange.start || invoiceDateRange.end) && (
+                    <button
+                      onClick={() => setInvoiceDateRange({ start: '', end: '' })}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Record Count */}
+                <div className="text-sm text-slate-500">
+                  共 {filteredInvoices.length} 条记录
+                </div>
+              </div>
+            </div>
+            
             {/* Invoice List */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">开票主体</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 w-16">序号</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">开票日期</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺名称-工厂主体</th>
                     <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">金额</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">发票类型</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">税率</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">日期</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">发票状态</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {invoices.slice(0, 50).map(invoice => (
-                    <tr key={invoice.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm text-slate-800">
-                        {stores.find(s => s.id === invoice.storeId)?.storeName || '未知店铺'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-800">
-                        {suppliers.find(s => s.id === invoice.supplierId)?.name || '未知主体'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-800 text-right">
-                        ¥{invoice.amount.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-800">
-                        {invoice.invoiceType}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-800 text-right">
-                        {invoice.taxRate}%
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-500">
-                        {invoice.date}
-                      </td>
-                    </tr>
-                  ))}
+                  {paginatedInvoices.map((invoice, index) => {
+                    const store = stores.find(s => s.id === invoice.storeId);
+                    const supplier = suppliers.find(s => s.id === invoice.supplierId);
+                    const factoryOwner = supplier?.owner || '';
+                    return (
+                      <tr key={invoice.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {(invoiceCurrentPage - 1) * invoicePageSize + index + 1}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-800">
+                          {invoice.date}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-800">
+                              {store?.storeName || '未知店铺'} - {supplier?.name || '未知主体'}
+                            </span>
+                            {factoryOwner && (
+                              <span className="text-xs text-slate-500 mt-0.5">
+                                {factoryOwner} - {supplier?.type === 'individual' ? '个体工商户' : supplier?.type === 'company' ? '企业' : '大额个体户'}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-800 text-right font-medium">
+                          ¥{invoice.amount.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                            invoice.status === 'verified' ? 'bg-green-100 text-green-700' :
+                            invoice.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {invoice.status === 'verified' ? '已核验' :
+                             invoice.status === 'rejected' ? '已驳回' : '待核验'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+              
+              {/* Pagination */}
+              {invoiceTotalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+                  <div className="text-sm text-slate-500">
+                    显示 {(invoiceCurrentPage - 1) * invoicePageSize + 1} 到 {Math.min(invoiceCurrentPage * invoicePageSize, filteredInvoices.length)} 条，共 {filteredInvoices.length} 条
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setInvoiceCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={invoiceCurrentPage === 1}
+                      className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      上一页
+                    </button>
+                    <span className="text-sm text-slate-600">{invoiceCurrentPage} / {invoiceTotalPages}</span>
+                    <button
+                      onClick={() => setInvoiceCurrentPage(prev => Math.min(invoiceTotalPages, prev + 1))}
+                      disabled={invoiceCurrentPage === invoiceTotalPages}
+                      className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
