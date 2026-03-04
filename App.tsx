@@ -2411,54 +2411,7 @@ function App() {
             <LayoutDashboard size={20} />
             <span>数据总览</span>
           </button>
-          
-          <button 
-            onClick={() => setCurrentView('stores')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'stores' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            <Store size={20} />
-            <span>店铺管理</span>
-          </button>
-          
-          <button 
-            onClick={() => setCurrentView('suppliers')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'suppliers' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            <Users size={20} />
-            <span>工厂管理</span>
-          </button>
-          
-          <button 
-            onClick={() => setCurrentView('userInvoices')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'userInvoices' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            <FileText size={20} />
-            <span>开票记录</span>
-          </button>
-          
-          <button 
-            onClick={() => setCurrentView('chat')}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left ${currentView === 'chat' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            <Sparkles size={20} />
-            <span>AI 助手</span>
-          </button>
         </nav>
-        
-        {/* Divider */}
-        <div className="my-4 border-t border-slate-700"></div>
-        
-        {/* Quick Actions */}
-        <div className="space-y-2 mb-4">
-          <button onClick={() => setActiveModal('addPayment')} className="w-full flex items-center gap-2 p-3 rounded-lg text-left bg-slate-800 text-slate-200 hover:bg-slate-700">
-            <CreditCard size={18} />
-            <span>登记工厂货款</span>
-          </button>
-          <button onClick={() => setActiveModal('addInvoice')} className="w-full flex items-center gap-2 p-3 rounded-lg text-left bg-slate-800 text-slate-200 hover:bg-slate-700">
-            <FilePlus size={18} />
-            <span>登记发票进项</span>
-          </button>
-        </div>
         
         {/* Admin Settings */}
         <div className="mt-auto pt-4 border-t border-slate-700">
@@ -2499,11 +2452,6 @@ function App() {
                   <span>{syncMessage}</span>
                 </div>
               )}
-              <button onClick={handleExportData} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200">
-                <Download size={16} />
-                <span>导出数据</span>
-              </button>
-
               <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200">
                 <User size={16} />
                 <span>退出登录</span>
