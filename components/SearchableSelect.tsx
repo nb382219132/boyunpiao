@@ -13,9 +13,10 @@ interface Props {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  allowCustomValues?: boolean;
 }
 
-const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placeholder = "请选择...", className = "", disabled=false }) => {
+const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placeholder = "请选择...", className = "", disabled=false, allowCustomValues=false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,9 @@ const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placehold
   const filteredOptions = options.filter(opt =>
     opt.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Check if current search term is a custom value (not in options)
+  const isCustomValue = allowCustomValues && searchTerm && !options.some(o => o.label.toLowerCase() === searchTerm.toLowerCase());
 
   const handleSelect = (val: string) => {
     onChange(val);
@@ -100,7 +104,7 @@ const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placehold
         
         {isOpen && (
             <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {filteredOptions.length > 0 ? (
+                {filteredOptions.length > 0 && (
                     filteredOptions.map(opt => (
                         <div 
                             key={opt.value}
@@ -111,7 +115,16 @@ const SearchableSelect: React.FC<Props> = ({ options, value, onChange, placehold
                             {opt.value === value && <Check size={14}/>}
                         </div>
                     ))
-                ) : (
+                )}
+                {isCustomValue && (
+                    <div 
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-indigo-50 flex justify-between items-center text-indigo-600 border-t border-slate-100"
+                        onMouseDown={() => handleSelect(searchTerm)} 
+                    >
+                        <span>使用 "{searchTerm}"</span>
+                    </div>
+                )}
+                {filteredOptions.length === 0 && !isCustomValue && (
                     <div className="px-3 py-2 text-sm text-slate-400 text-center">无匹配项</div>
                 )}
             </div>
