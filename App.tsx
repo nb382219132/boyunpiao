@@ -2960,31 +2960,96 @@ function App() {
             {/* 店铺管理 Section */}
             {adminActiveTab === 'stores' && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-800">店铺管理</h3>
-                <button onClick={handleOpenAddStore} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-                  <Plus size={14} />
-                  <span>添加店铺</span>
-                </button>
+              {/* Header with search, add and export buttons */}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <Store className="text-slate-700" size={24} />
+                  <h3 className="text-xl font-semibold text-slate-800">店铺管理</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Search Box */}
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="搜索店铺或公司"
+                      className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+                      value={storeSearchTerm}
+                      onChange={(e) => setStoreSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  {/* Add Store Button */}
+                  <button onClick={handleOpenAddStore} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                    <Plus size={16} />
+                    <span>添加店铺</span>
+                  </button>
+                  {/* Export Button */}
+                  <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm hover:bg-slate-50">
+                    <Download size={16} />
+                    <span>导出数据</span>
+                  </button>
+                </div>
               </div>
+              
+              {/* Store List Table */}
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">店铺名称</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">公司名称</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">收入</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-500">操作</th>
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">公司名称</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">纳税人类型</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">季度收入</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {stores.map(store => (
+                    {stores
+                      .filter(store => {
+                        if (!storeSearchTerm) return true;
+                        const searchLower = storeSearchTerm.toLowerCase();
+                        return (
+                          store.storeName?.toLowerCase().includes(searchLower) ||
+                          store.companyName?.toLowerCase().includes(searchLower)
+                        );
+                      })
+                      .map(store => (
                       <tr key={store.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 text-sm text-slate-800">{store.storeName}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{store.companyName}</td>
-                        <td className="px-4 py-3 text-sm text-slate-800 text-right">¥{(store.quarterIncome || 0).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-center">
-                          <button onClick={() => handleDeleteStore(store.id)} className="text-red-600 hover:text-red-800 text-sm">删除</button>
+                        <td className="px-4 py-4 text-sm font-medium text-slate-800">{store.storeName}</td>
+                        <td className="px-4 py-4 text-sm text-slate-600">{store.companyName}</td>
+                        <td className="px-4 py-4">
+                          <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                            store.taxType === 'small_scale' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {store.taxType === 'small_scale' ? '小规模纳税人' : '一般纳税人'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-slate-800 text-right font-medium">
+                          ¥{(store.quarterIncome || 0).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button 
+                              onClick={() => handleEditExpenses(store)}
+                              className="px-3 py-1.5 text-sm text-emerald-600 hover:text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-50 transition-colors"
+                            >
+                              支出设置
+                            </button>
+                            <button 
+                              onClick={() => handleOpenEditStore(store)}
+                              className="px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-700 border border-indigo-200 rounded hover:bg-indigo-50 transition-colors"
+                            >
+                              基本信息
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteStore(store.id)}
+                              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            >
+                              删除
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
