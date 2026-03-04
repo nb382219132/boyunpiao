@@ -462,13 +462,21 @@ export const saveStores = async (stores: StoreCompany[]): Promise<boolean> => {
       if (stores.length > 0) {
         // 对每个店铺进行upsert
         for (const store of stores) {
-          // 移除可能不存在的字段，只保留核心字段
-          const { version, expenseBreakdown, ...coreStore } = store;
+          // 映射字段名以匹配Supabase表结构
+          const storeData = {
+            id: store.id,
+            storeName: store.storeName,
+            companyName: store.companyName,
+            quarterIncome: store.quarterIncome,
+            quarterExpenses: store.quarterExpenses,
+            taxType: store.taxType,
+            platform: store.platform
+          };
           
           // 使用upsert方式保存数据，根据id字段更新或插入
           const { error: upsertError } = await client
             .from('stores')
-            .upsert(coreStore, { onConflict: 'id' })
+            .upsert(storeData, { onConflict: 'id' })
             .select();
           
           if (upsertError) {
