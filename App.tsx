@@ -80,7 +80,7 @@ import { getInvoiceStatusInfo } from './services/invoiceRecognition';
 
 // Simple Navigation State
 type View = 'dashboard' | 'stores' | 'suppliers' | 'chat' | 'admin' | 'userInvoices' | 'login' | 'signup';
-type ModalType = 'addStore' | 'editStore' | 'addSupplier' | 'editEntity' | 'editOwner' | 'addPayment' | 'addInvoice' | 'editExpenses' | 'quarterManagement' | 'deleteStore' | 'deleteEntity' | 'deleteOwner' | null;
+type ModalType = 'addStore' | 'editStore' | 'addSupplier' | 'editEntity' | 'editOwner' | 'addPayment' | 'addInvoice' | 'editExpenses' | 'quarterManagement' | 'quarterHistory' | 'deleteStore' | 'deleteEntity' | 'deleteOwner' | null;
 
 // --- Modal Component (Defined outside to prevent re-renders losing focus) ---
 interface ModalBackdropProps {
@@ -2114,6 +2114,62 @@ function App() {
           </ModalBackdrop>
       )}
 
+      {/* Quarter History Modal */}
+      {activeModal === 'quarterHistory' && (
+          <ModalBackdrop title="季度历史记录" onClose={() => setActiveModal(null)}>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {availableQuarters.length === 0 ? (
+                      <div className="text-center text-slate-500 py-8">
+                          <Calendar size={48} className="mx-auto mb-4 text-slate-300" />
+                          <p>暂无季度历史记录</p>
+                      </div>
+                  ) : (
+                      availableQuarters.map((quarter) => (
+                          <div key={quarter} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
+                              <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                          <Calendar size={20} className="text-indigo-600" />
+                                      </div>
+                                      <div>
+                                          <div className="font-semibold text-slate-800">{quarter}</div>
+                                          <div className="text-xs text-slate-500">
+                                              {quarter === currentQuarter ? '当前季度' : '历史季度'}
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                      {quarter === currentQuarter ? (
+                                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">当前</span>
+                                      ) : (
+                                          <button 
+                                              onClick={() => {
+                                                  if (confirm(`确定要切换到 ${quarter} 的数据吗？\n\n当前未保存的数据将会丢失。`)) {
+                                                      setCurrentQuarter(quarter);
+                                                      // 加载该季度的数据
+                                                      if (quarterData[quarter]) {
+                                                          setStores(quarterData[quarter].stores || []);
+                                                          setSuppliers(quarterData[quarter].suppliers || []);
+                                                          setInvoices(quarterData[quarter].invoices || []);
+                                                          setPayments(quarterData[quarter].payments || []);
+                                                      }
+                                                      setActiveModal(null);
+                                                  }
+                                              }}
+                                              className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs rounded hover:bg-indigo-200"
+                                          >
+                                              切换
+                                          </button>
+                                      )}
+                                  </div>
+                              </div>
+                          </div>
+                      ))
+                  )}
+              </div>
+          </ModalBackdrop>
+      )}
+
       {(activeModal === 'addSupplier' || activeModal === 'editEntity') && (
         <ModalBackdrop title={activeModal === 'addSupplier' ? "添加工厂及开票主体" : "编辑开票主体"} onClose={() => setActiveModal(null)}>
           <div className="space-y-6">
@@ -2447,10 +2503,7 @@ function App() {
                 <Download size={16} />
                 <span>导出数据</span>
               </button>
-              <button onClick={() => setActiveModal('quarterManagement')} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200">
-                <Calendar size={16} />
-                <span>季度管理</span>
-              </button>
+
               <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200">
                 <User size={16} />
                 <span>退出登录</span>
@@ -2728,8 +2781,7 @@ function App() {
                       {/* Right Side - Entities List */}
                       <div className="flex-1">
                         {/* Table Header */}
-                        <div className="grid grid-cols-4 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-200 text-sm font-medium text-slate-700">
-                          <div>工厂</div>
+                        <div className="grid grid-cols-3 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-200 text-sm font-medium text-slate-700">
                           <div>公司/个体户</div>
                           <div>店铺名称</div>
                           <div className="text-right">开票金额</div>
@@ -2749,13 +2801,7 @@ function App() {
                             );
                             
                             return (
-                              <div key={supplier.id} className="grid grid-cols-4 gap-4 px-6 py-4 items-center hover:bg-slate-50">
-                                {/* Factory */}
-                                <div className="flex items-center gap-2">
-                                  <Building2 size={16} className="text-slate-400" />
-                                  <span className="text-sm text-slate-600">{owner}</span>
-                                </div>
-                                
+                              <div key={supplier.id} className="grid grid-cols-3 gap-4 px-6 py-4 items-center hover:bg-slate-50">
                                 {/* Company/Entity */}
                                 <div>
                                   <div className="font-medium text-slate-800">{supplier.name}</div>
@@ -3053,10 +3099,10 @@ function App() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                  <button onClick={handleStartNewQuarter} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
                     开始新季度
                   </button>
-                  <button className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">
+                  <button onClick={() => setActiveModal('quarterHistory')} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">
                     季度历史记录
                   </button>
                   <button onClick={handleExportData} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
