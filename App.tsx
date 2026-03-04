@@ -2966,31 +2966,38 @@ function App() {
             {/* 季度管理 Section */}
             {adminActiveTab === 'quarters' && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">季度管理</h3>
+              <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <Calendar size={20} />
+                <span>季度管理</span>
+              </h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                  <div>
-                    <p className="text-sm text-slate-500">当前季度</p>
-                    <p className="text-xl font-bold text-slate-800">{currentQuarter}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-                      开始新季度
-                    </button>
-                    <button className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">
-                      季度历史记录
-                    </button>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-600">当前季度：</span>
+                  <span className="px-3 py-1.5 bg-slate-100 text-slate-800 rounded-lg text-sm font-medium">
+                    {currentQuarter}
+                  </span>
                 </div>
-                <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-2">可用季度</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {availableQuarters.map(quarter => (
-                      <span key={quarter} className={`px-3 py-1 rounded-full text-sm ${quarter === currentQuarter ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'}`}>
-                        {quarter}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-3">
+                  <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                    开始新季度
+                  </button>
+                  <button className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300">
+                    季度历史记录
+                  </button>
+                  <button onClick={handleExportData} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                    备份数据
+                  </button>
+                  <button onClick={handleRestoreData} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                    恢复数据
+                  </button>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-lg">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-2">季度管理说明：</h4>
+                  <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
+                    <li>开始新季度会清零所有收入、货款和开票数据</li>
+                    <li>店铺、工厂等基础设置会被保留</li>
+                    <li>建议在每个季度开始时备份重要数据</li>
+                  </ul>
                 </div>
               </div>
             </div>
