@@ -2498,10 +2498,10 @@ function App() {
                 <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${Math.min(100, (totalInvoiced / (totalIncome - totalGap)) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (totalIncome - totalGap) > 0 ? (totalInvoiced / (totalIncome - totalGap)) * 100 : 0)}%` }}
                   ></div>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">已完成 {Math.min(100, Math.round((totalInvoiced / (totalIncome - totalGap)) * 100))}% 的发票收集</p>
+                <p className="text-xs text-slate-500 mt-1">已完成 {Math.min(100, (totalIncome - totalGap) > 0 ? Math.round((totalInvoiced / (totalIncome - totalGap)) * 100) : 0)}% 的发票收集</p>
               </div>
               
               <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
