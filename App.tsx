@@ -2675,104 +2675,145 @@ function App() {
         {/* Suppliers View */}
         {currentView === 'suppliers' && (
           <div className="p-6 space-y-6">
+            {/* Header */}
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">工厂管理</h2>
+              <h2 className="text-xl font-bold text-slate-800">工厂发票管理</h2>
               <div className="flex items-center gap-3">
-                <input 
-                  type="text" 
-                  placeholder="搜索工厂或开票单位..." 
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={supplierSearchTerm}
-                  onChange={(e) => setSupplierSearchTerm(e.target.value)}
-                />
+                <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                  <Download size={16} />
+                  <span>导出数据</span>
+                </button>
                 <button onClick={handleOpenAddSupplier} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                   <Plus size={16} />
-                  <span>新增工厂</span>
+                  <span>添加工厂</span>
                 </button>
               </div>
             </div>
             
-            {/* Supplier List */}
-            <div className="space-y-6">
-              {Object.entries(filteredGroupedSuppliersMap).map(([owner, suppliers]) => (
-                <div key={owner} className="bg-white rounded-xl shadow-sm border border-slate-200">
-                  <div className="p-4 bg-indigo-50 border-b border-slate-200">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-indigo-800">{owner}</h3>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setActiveModal('addSupplier')}
-                          className="flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs hover:bg-indigo-200"
-                        >
-                          <Plus size={12} />
-                          <span>新增开票单位</span>
-                        </button>
-                        <button 
-                          onClick={() => handleOpenRenameOwner(owner)}
-                          className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs hover:bg-amber-200"
-                        >
-                          <Pencil size={12} />
-                          <span>重命名工厂</span>
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteOwner(owner)}
-                          className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                        >
-                          <X size={12} />
-                          <span>删除工厂</span>
-                        </button>
+            {/* Supplier List - New Layout */}
+            <div className="space-y-4">
+              {Object.entries(filteredGroupedSuppliersMap).map(([owner, suppliers]) => {
+                // Calculate owner totals
+                const ownerTotalInvoiced = suppliers.reduce((sum, s) => sum + getSupplierInvoicedTotal(s.id), 0);
+                const ownerTotalLimit = suppliers.reduce((sum, s) => sum + (s.limit || s.quarterlyLimit || 280000), 0);
+                
+                return (
+                  <div key={owner} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="flex">
+                      {/* Left Side - Owner Info */}
+                      <div className="w-64 bg-slate-50 p-6 border-r border-slate-200">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <User size={20} className="text-indigo-600" />
+                          </div>
+                          <span className="font-semibold text-slate-800">{owner}</span>
+                        </div>
+                        
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between text-slate-600">
+                            <span>总开票(收入)</span>
+                            <span className="font-medium">¥{ownerTotalInvoiced.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>总开票</span>
+                            <span className="font-medium">¥{ownerTotalInvoiced.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>总待开缺口</span>
+                            <span className="font-medium text-red-600">¥{Math.max(0, ownerTotalLimit - ownerTotalInvoiced).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right Side - Entities List */}
+                      <div className="flex-1">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-4 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-200 text-sm font-medium text-slate-700">
+                          <div>工厂</div>
+                          <div>公司/个体户</div>
+                          <div>店铺名称</div>
+                          <div className="text-right">开票金额</div>
+                        </div>
+                        
+                        {/* Entities */}
+                        <div className="divide-y divide-slate-100">
+                          {suppliers.map(supplier => {
+                            const used = getSupplierInvoicedTotal(supplier.id);
+                            const limit = supplier.limit || supplier.quarterlyLimit || 280000;
+                            const percentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+                            const remaining = limit - used;
+                            
+                            // Get stores that use this supplier
+                            const supplierStores = stores.filter(store => 
+                              invoices.some(inv => inv.supplierId === supplier.id && inv.storeId === store.id)
+                            );
+                            
+                            return (
+                              <div key={supplier.id} className="grid grid-cols-4 gap-4 px-6 py-4 items-center hover:bg-slate-50">
+                                {/* Factory */}
+                                <div className="flex items-center gap-2">
+                                  <Building2 size={16} className="text-slate-400" />
+                                  <span className="text-sm text-slate-600">{owner}</span>
+                                </div>
+                                
+                                {/* Company/Entity */}
+                                <div>
+                                  <div className="font-medium text-slate-800">{supplier.name}</div>
+                                  <div className="text-xs text-slate-500">
+                                    {supplier.type === 'individual' ? '个体工商户' : 
+                                     supplier.type === 'large_individual' ? '大额个体户' :
+                                     supplier.type === 'small_scale' ? '小规模纳税人' : '一般纳税人'}
+                                  </div>
+                                </div>
+                                
+                                {/* Store Names */}
+                                <div className="flex flex-wrap gap-1">
+                                  {supplierStores.length > 0 ? (
+                                    supplierStores.slice(0, 2).map((store, idx) => (
+                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs rounded">
+                                        {store.storeName}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-xs text-slate-400">-</span>
+                                  )}
+                                  {supplierStores.length > 2 && (
+                                    <span className="text-xs text-slate-400">+{supplierStores.length - 2}</span>
+                                  )}
+                                </div>
+                                
+                                {/* Invoice Amount with Progress */}
+                                <div className="text-right">
+                                  <div className="text-sm text-slate-600 mb-1">
+                                    已开: ¥{used.toLocaleString()} / {limit.toLocaleString()}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`h-full ${percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-orange-500' : 'bg-green-500'}`}
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                    <span className={`text-xs font-medium ${remaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                      ¥{remaining.toLocaleString()}
+                                    </span>
+                                    <button 
+                                      onClick={() => handleOpenEditEntity(supplier)}
+                                      className="text-slate-400 hover:text-indigo-600"
+                                    >
+                                      <Settings size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="divide-y divide-slate-100">
-                    {suppliers.map(supplier => {
-                      const used = getSupplierInvoicedTotal(supplier.id);
-                      const limit = supplier.limit || supplier.quarterlyLimit || 280000;
-                      const remaining = limit - used;
-                      const percentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
-                      return (
-                        <div key={supplier.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                          <div className="flex items-center gap-4">
-                            <div>
-                              <div className="font-medium text-slate-800">{supplier.name}</div>
-                              <div className="text-xs text-slate-500">{supplier.type === 'individual' ? '个体工商户' : supplier.type === 'company' ? '企业' : '大额个体户'}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-6">
-                            <div className="text-right">
-                              <div className="text-sm text-slate-600">限额: ¥{limit.toLocaleString()}</div>
-                              <div className="text-xs text-slate-500">已用: ¥{used.toLocaleString()}</div>
-                            </div>
-                            <div className="w-32">
-                              <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full ${percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-orange-500' : 'bg-green-500'}`}
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                              <div className="text-xs text-right mt-1 text-slate-500">{percentage.toFixed(1)}%</div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button 
-                                onClick={() => handleOpenEditEntity(supplier)}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                编辑
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteEntity(supplier.id)}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                              >
-                                删除
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
