@@ -2218,7 +2218,7 @@ function App() {
               <div>
                 <label className="text-xs text-slate-500 mb-1 block">工厂负责人</label>
                 <SearchableSelect
-                  options={factoryOwners.map(owner => ({ value: owner, label: owner }))}
+                  options={factoryOwners.filter(owner => owner && owner.trim() !== '').map(owner => ({ value: owner, label: owner }))}
                   value={supplierForm.owner}
                   onChange={(val) => setSupplierForm({...supplierForm, owner: val || ''})}
                   placeholder="选择现有工厂或直接输入新工厂名称"
