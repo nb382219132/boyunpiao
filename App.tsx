@@ -57,7 +57,8 @@ import {
   Calendar,
   FileText,
   RefreshCw,
-  Settings
+  Settings,
+  Search
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
@@ -3042,37 +3043,111 @@ function App() {
             
             {/* 工厂管理 Section */}
             {adminActiveTab === 'suppliers' && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-800">工厂管理</h3>
-                <button onClick={handleOpenAddSupplier} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-                  <Plus size={14} />
-                  <span>添加工厂</span>
-                </button>
+            <div className="space-y-4">
+              {/* 标题栏 */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <Users size={24} className="text-slate-700" />
+                  <h3 className="text-xl font-semibold text-slate-800">工厂管理</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="搜索工厂或开票主体..."
+                      className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+                      value={supplierSearchTerm}
+                      onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <button onClick={handleOpenAddSupplier} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                    <Plus size={16} />
+                    <span>添加新工厂</span>
+                  </button>
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">工厂名称</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">负责人</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">开票限额</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-500">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {suppliers.map(supplier => (
-                      <tr key={supplier.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 text-sm text-slate-800">{supplier.name}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{supplier.owner}</td>
-                        <td className="px-4 py-3 text-sm text-slate-800 text-right">¥{supplier.limit.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-center">
-                          <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-red-600 hover:text-red-800 text-sm">删除</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              
+              {/* 按负责人分组的工厂列表 */}
+              <div className="space-y-4">
+                {(() => {
+                  // 按负责人分组
+                  const groupedSuppliers = suppliers.reduce((acc, supplier) => {
+                    const owner = supplier.owner || '未分配';
+                    if (!acc[owner]) {
+                      acc[owner] = [];
+                    }
+                    acc[owner].push(supplier);
+                    return acc;
+                  }, {} as Record<string, typeof suppliers>);
+                  
+                  // 过滤搜索
+                  const filteredOwners = Object.keys(groupedSuppliers).filter(owner => {
+                    if (!supplierSearchTerm) return true;
+                    const searchLower = supplierSearchTerm.toLowerCase();
+                    if (owner.toLowerCase().includes(searchLower)) return true;
+                    return groupedSuppliers[owner].some(s => 
+                      s.name.toLowerCase().includes(searchLower)
+                    );
+                  });
+                  
+                  return filteredOwners.map(owner => (
+                    <div key={owner} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                      {/* 负责人头部 */}
+                      <div className="flex items-center justify-between p-4 bg-slate-50 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <Building2 size={20} className="text-indigo-600" />
+                          </div>
+                          <span className="text-lg font-semibold text-slate-800">{owner}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded hover:bg-blue-50">
+                            编辑
+                          </button>
+                          <button className="px-3 py-1 text-sm text-red-600 hover:text-red-800 border border-red-200 rounded hover:bg-red-50">
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* 开票主体列表 */}
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-slate-600">开票主体</span>
+                          <button 
+                            onClick={handleOpenAddSupplier}
+                            className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                          >
+                            <Plus size={14} />
+                            添加新主体
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {groupedSuppliers[owner]
+                            .filter(supplier => {
+                              if (!supplierSearchTerm) return true;
+                              const searchLower = supplierSearchTerm.toLowerCase();
+                              return supplier.name.toLowerCase().includes(searchLower) ||
+                                     owner.toLowerCase().includes(searchLower);
+                            })
+                            .map(supplier => (
+                            <div key={supplier.id} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-800">{supplier.name}</span>
+                                <span className="text-xs text-slate-500">({supplier.type === 'individual' ? '个体工商户' : supplier.type === 'company' ? '企业' : '大额个体户'})</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button className="text-sm text-blue-600 hover:text-blue-800">编辑</button>
+                                <button onClick={() => handleDeleteSupplier(supplier.id)} className="text-sm text-red-600 hover:text-red-800">删除</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
             )}
