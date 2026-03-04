@@ -2423,11 +2423,12 @@ function App() {
         <header className="bg-white border-b border-slate-200 p-4 sticky top-0 z-10">
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-bold text-slate-800">
-              {currentView === 'dashboard' && '仪表盘'}
+              {currentView === 'dashboard' && '数据总览'}
               {currentView === 'stores' && '店铺管理'}
               {currentView === 'suppliers' && '工厂管理'}
+              {currentView === 'userInvoices' && '开票记录'}
               {currentView === 'admin' && '系统管理'}
-              {currentView === 'chat' && 'AI分析'}
+              {currentView === 'chat' && 'AI助手'}
             </h1>
             <div className="flex items-center gap-3">
               {/* 同步状态指示器 */}
@@ -3176,7 +3177,58 @@ function App() {
           </div>
         )}
         
-
+        {/* User Invoices View */}
+        {currentView === 'userInvoices' && (
+          <div className="p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-800">开票记录</h2>
+              <button onClick={() => setActiveModal('addInvoice')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                <Plus size={16} />
+                <span>新增开票</span>
+              </button>
+            </div>
+            
+            {/* Invoice List */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">开票主体</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">金额</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">发票类型</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">税率</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">日期</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {invoices.slice(0, 50).map(invoice => (
+                    <tr key={invoice.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm text-slate-800">
+                        {stores.find(s => s.id === invoice.storeId)?.storeName || '未知店铺'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-800">
+                        {suppliers.find(s => s.id === invoice.supplierId)?.name || '未知主体'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-800 text-right">
+                        ¥{invoice.amount.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-800">
+                        {invoice.invoiceType}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-800 text-right">
+                        {invoice.taxRate}%
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-500">
+                        {invoice.date}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         
         {/* AI Chat View */}
         {currentView === 'chat' && (
