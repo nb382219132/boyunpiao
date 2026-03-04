@@ -204,7 +204,12 @@ export const subscribeToAuthChanges = (callback: (user: any) => void) => {
     
     // 订阅认证状态变化
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      // 只有当事件不是INITIAL_SESSION时才调用callback，避免重复调用
+      console.log('Auth state changed:', event, session?.user?.email);
+      // 对于INITIAL_SESSION事件，如果已经调用过callback，则不再调用
+      if (event === 'INITIAL_SESSION' && !isFirstCall) {
+        return;
+      }
+      // 对于其他事件，直接调用callback
       if (event !== 'INITIAL_SESSION') {
         callback(session?.user || null);
       }
