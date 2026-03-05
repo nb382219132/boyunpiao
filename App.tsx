@@ -3128,10 +3128,19 @@ function App() {
                                       ¥{remaining.toLocaleString()}
                                     </span>
                                     <button 
-                                      onClick={() => handleOpenEditEntity(supplier)}
+                                      onClick={() => {
+                                        // 设置当前供应商为开票主体
+                                        setTransaction({
+                                          ...transaction,
+                                          supplierId: supplier.id,
+                                          storeId: ''
+                                        });
+                                        setActiveModal('addInvoice');
+                                      }}
                                       className="text-slate-400 hover:text-indigo-600"
+                                      title="添加开票记录"
                                     >
-                                      <Settings size={14} />
+                                      <Plus size={14} />
                                     </button>
                                   </div>
                                 </div>
