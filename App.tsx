@@ -2683,10 +2683,39 @@ function App() {
                 </div>
               </div>
 
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-green-100 mb-1">{currentQuarter}总收入</p>
+                    <h3 className="text-2xl font-bold">¥{totalIncome.toLocaleString()}</h3>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-2">
+                    <TrendingUp size={20} className="text-white" />
+                  </div>
+                </div>
+                <p className="text-xs text-green-100 mt-2">{currentQuarter} 季度收入</p>
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">{currentQuarter}店铺收入排行</h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
+                    {sortedIncomeData.map((item, idx) => (
+                      <div key={idx} className="text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
+                          <span className="font-mono text-gray-500">¥{(item.value / 10000).toFixed(2)}万</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-green-500" style={{ width: `${(item.value / Math.max(...sortedIncomeData.map(i => i.value))) * 100}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-amber-100 mb-1">当前季度发票缺口</p>
+                    <p className="text-sm text-amber-100 mb-1">{currentQuarter}发票缺口</p>
                     <h3 className="text-2xl font-bold">¥{totalGap.toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 rounded-full p-2">
@@ -2695,7 +2724,7 @@ function App() {
                 </div>
                 <p className="text-xs text-amber-100 mt-2">{currentQuarter} 季度发票缺口</p>
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
-                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺缺口排行</h4>
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">{currentQuarter}店铺缺口排行</h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
                     {sortedGapData.map((item, idx) => (
                       <div key={idx} className="text-xs">
@@ -2712,78 +2741,33 @@ function App() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-rose-100 mb-1">当前季度应纳税额</p>
-                    <h3 className="text-2xl font-bold">¥{((totalIncome - totalExpenses) * 0.13).toLocaleString()}</h3>
+                    <p className="text-sm text-emerald-100 mb-1">{currentQuarter}可用额度</p>
+                    <h3 className="text-2xl font-bold">¥{totalQuotaAvailable.toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 rounded-full p-2">
-                    <Receipt size={20} className="text-white" />
+                    <Shield size={20} className="text-white" />
                   </div>
                 </div>
-                <p className="text-xs text-rose-100 mt-2">{currentQuarter} 季度按13%税率计算</p>
+                <p className="text-xs text-emerald-100 mt-2">{currentQuarter} 季度可用发票额度</p>
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
-                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺纳税排行</h4>
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">{currentQuarter}工厂额度排行</h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
-                    {stores.map(s => {
-                      const tax = (s.quarterIncome - s.quarterExpenses) * 0.13;
-                      return { label: s.storeName, value: tax };
-                    }).filter(i => i.value > 0).sort((a, b) => b.value - a.value).map((item, idx, arr) => (
+                    {sortedAvailableQuotaData.map((item, idx) => (
                       <div key={idx} className="text-xs">
                         <div className="flex justify-between mb-1">
                           <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
                           <span className="font-mono text-gray-500">¥{(item.value / 10000).toFixed(2)}万</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-rose-500" style={{ width: `${(item.value / Math.max(...arr.map(i => i.value))) * 100}%` }}></div>
+                          <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(item.value / Math.max(...sortedAvailableQuotaData.map(i => i.value))) * 100}%` }}></div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-slate-500 mb-1">季度总收入</p>
-                    <h3 className="text-2xl font-bold text-slate-800">¥{totalIncome.toLocaleString()}</h3>
-                  </div>
-                  <div className="bg-green-100 rounded-full p-2">
-                    <TrendingUp size={20} className="text-green-700" />
-                  </div>
-                </div>
-                <KpiTooltip title="店铺收入排行" items={sortedIncomeData} colorClass="bg-green-500" />
-              </div>
-              
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-slate-500 mb-1">季度发票缺口</p>
-                    <h3 className="text-2xl font-bold text-amber-700">¥{totalGap.toLocaleString()}</h3>
-                  </div>
-                  <div className="bg-amber-100 rounded-full p-2">
-                    <ArrowUpRight size={20} className="text-amber-700" />
-                  </div>
-                </div>
-                <KpiTooltip title="店铺发票缺口排行" items={sortedGapData} colorClass="bg-amber-500" />
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-slate-500 mb-1">季度可用发票额度</p>
-                    <h3 className="text-2xl font-bold text-emerald-700">¥{totalQuotaAvailable.toLocaleString()}</h3>
-                  </div>
-                  <div className="bg-emerald-100 rounded-full p-2">
-                    <Shield size={20} className="text-emerald-700" />
-                  </div>
-                </div>
-                <KpiTooltip title="工厂可用额度排行（不含一般纳税人）" items={sortedAvailableQuotaData} colorClass="bg-emerald-500" />
               </div>
             </div>
             
