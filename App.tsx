@@ -2616,6 +2616,15 @@ function App() {
       
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto bg-slate-50">
+        {/* 数据加载中显示遮罩 */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-slate-50/80 z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+              <p className="text-slate-600">数据加载中...</p>
+            </div>
+          </div>
+        )}
         {/* Top Navigation Bar */}
         <header className="bg-white border-b border-slate-200 p-4 sticky top-0 z-10">
           <div className="flex justify-between items-center">
