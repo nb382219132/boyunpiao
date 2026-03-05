@@ -2998,7 +2998,7 @@ function App() {
                 const ownerTotalLimit = suppliers.reduce((sum, s) => sum + (s.limit || s.quarterlyLimit || 280000), 0);
                 
                 return (
-                  <div key={owner} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div key={owner} className="bg-white rounded-xl shadow-sm border border-slate-200">
                     <div className="flex">
                       {/* Left Side - Owner Info */}
                       <div className="w-64 bg-slate-50 p-6 border-r border-slate-200">
