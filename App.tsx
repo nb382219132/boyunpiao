@@ -725,6 +725,15 @@ function App() {
       return acc + (gap > 0 ? gap : 0);
   }, 0);
 
+  // 计算年度总收入（基于当前季度所属年度）
+  const currentYear = currentQuarter.substring(0, 4); // 提取年份，如 "2025"
+  const annualIncome = Object.entries(quarterData)
+    .filter(([quarter]) => quarter.startsWith(currentYear)) // 筛选同一年度的季度
+    .reduce((sum, [, data]) => {
+      const quarterIncome = (data.stores || []).reduce((acc: number, s: StoreCompany) => acc + (s.quarterIncome || 0), 0);
+      return sum + quarterIncome;
+    }, totalIncome); // 加上当前季度的收入
+
   // 店铺发票缺口数据 - 按缺口金额排序
   const chartData = stores
     .map(s => {
@@ -2648,22 +2657,22 @@ function App() {
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-blue-100 mb-1">年度总营收</p>
-                    <h3 className="text-2xl font-bold">¥{(totalIncome * 4).toLocaleString()}</h3>
+                    <p className="text-sm text-blue-100 mb-1">年度总收入</p>
+                    <h3 className="text-2xl font-bold">¥{annualIncome.toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 rounded-full p-2">
                     <TrendingUp size={20} className="text-white" />
                   </div>
                 </div>
-                <p className="text-xs text-blue-100 mt-2">预估全年收入（季度×4）</p>
+                <p className="text-xs text-blue-100 mt-2">{currentYear}年度所有季度收入总和</p>
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
-                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度营收排行</h4>
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度收入排行</h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
                     {sortedIncomeData.map((item, idx) => (
                       <div key={idx} className="text-xs">
                         <div className="flex justify-between mb-1">
                           <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
-                          <span className="font-mono text-gray-500">¥{(item.value * 4 / 10000).toFixed(2)}万</span>
+                          <span className="font-mono text-gray-500">¥{(item.value / 10000).toFixed(2)}万</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                           <div className="h-full rounded-full bg-blue-500" style={{ width: `${(item.value / Math.max(...sortedIncomeData.map(i => i.value))) * 100}%` }}></div>
@@ -2677,22 +2686,22 @@ function App() {
               <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-amber-100 mb-1">年度发票缺口</p>
-                    <h3 className="text-2xl font-bold">¥{(totalGap * 4).toLocaleString()}</h3>
+                    <p className="text-sm text-amber-100 mb-1">当前季度发票缺口</p>
+                    <h3 className="text-2xl font-bold">¥{totalGap.toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 rounded-full p-2">
                     <ArrowUpRight size={20} className="text-white" />
                   </div>
                 </div>
-                <p className="text-xs text-amber-100 mt-2">预估全年缺口（季度×4）</p>
+                <p className="text-xs text-amber-100 mt-2">{currentQuarter} 季度发票缺口</p>
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
-                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度缺口排行</h4>
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺缺口排行</h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
                     {sortedGapData.map((item, idx) => (
                       <div key={idx} className="text-xs">
                         <div className="flex justify-between mb-1">
                           <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
-                          <span className="font-mono text-gray-500">¥{(item.value * 4 / 10000).toFixed(2)}万</span>
+                          <span className="font-mono text-gray-500">¥{(item.value / 10000).toFixed(2)}万</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                           <div className="h-full rounded-full bg-amber-500" style={{ width: `${(item.value / Math.max(...sortedGapData.map(i => i.value))) * 100}%` }}></div>
@@ -2706,19 +2715,19 @@ function App() {
               <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-rose-100 mb-1">年度应纳税额</p>
-                    <h3 className="text-2xl font-bold">¥{((totalIncome - totalExpenses) * 0.13 * 4).toLocaleString()}</h3>
+                    <p className="text-sm text-rose-100 mb-1">当前季度应纳税额</p>
+                    <h3 className="text-2xl font-bold">¥{((totalIncome - totalExpenses) * 0.13).toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 rounded-full p-2">
                     <Receipt size={20} className="text-white" />
                   </div>
                 </div>
-                <p className="text-xs text-rose-100 mt-2">按13%税率预估（季度×4）</p>
+                <p className="text-xs text-rose-100 mt-2">{currentQuarter} 季度按13%税率计算</p>
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
-                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度纳税排行</h4>
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺纳税排行</h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
                     {stores.map(s => {
-                      const tax = (s.quarterIncome - s.quarterExpenses) * 0.13 * 4;
+                      const tax = (s.quarterIncome - s.quarterExpenses) * 0.13;
                       return { label: s.storeName, value: tax };
                     }).filter(i => i.value > 0).sort((a, b) => b.value - a.value).map((item, idx, arr) => (
                       <div key={idx} className="text-xs">
@@ -2741,7 +2750,7 @@ function App() {
               <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">季度总营收</p>
+                    <p className="text-sm text-slate-500 mb-1">季度总收入</p>
                     <h3 className="text-2xl font-bold text-slate-800">¥{totalIncome.toLocaleString()}</h3>
                   </div>
                   <div className="bg-green-100 rounded-full p-2">
@@ -2754,7 +2763,7 @@ function App() {
               <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">发票缺口</p>
+                    <p className="text-sm text-slate-500 mb-1">季度发票缺口</p>
                     <h3 className="text-2xl font-bold text-amber-700">¥{totalGap.toLocaleString()}</h3>
                   </div>
                   <div className="bg-amber-100 rounded-full p-2">
@@ -2767,7 +2776,7 @@ function App() {
               <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">可用发票额度</p>
+                    <p className="text-sm text-slate-500 mb-1">季度可用发票额度</p>
                     <h3 className="text-2xl font-bold text-emerald-700">¥{totalQuotaAvailable.toLocaleString()}</h3>
                   </div>
                   <div className="bg-emerald-100 rounded-full p-2">
