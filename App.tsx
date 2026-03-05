@@ -1281,14 +1281,27 @@ function App() {
       updatedStores = [...stores, s];
     }
     setStores(updatedStores);
+    
+    // 实时保存到Supabase
+    saveStores(updatedStores).then(() => {
+      console.log('店铺数据已实时保存到Supabase');
+    }).catch(err => {
+      console.error('保存店铺数据失败:', err);
+    });
+    
     setActiveModal(null);
   };
 
   const handleDeleteStore = (storeId: string) => {
     const updatedStores = stores.filter(s => s.id !== storeId);
     setStores(updatedStores);
-    // Optional: Clean up orphaned invoices/payments?
-    // For now we keep them or filter them out in display if needed.
+    
+    // 实时保存到Supabase
+    saveStores(updatedStores).then(() => {
+      console.log('店铺删除后已实时保存到Supabase');
+    }).catch(err => {
+      console.error('保存店铺数据失败:', err);
+    });
   };
 
   // --- Supplier/Factory CRUD ---
@@ -1351,6 +1364,14 @@ function App() {
       }
     }
     setSuppliers(updatedSuppliers);
+    
+    // 实时保存到Supabase
+    saveSuppliers(updatedSuppliers).then(() => {
+      console.log('供应商数据已实时保存到Supabase');
+    }).catch(err => {
+      console.error('保存供应商数据失败:', err);
+    });
+    
     setActiveModal(null);
   };
 
@@ -1365,6 +1386,18 @@ function App() {
     // Update factoryOwners list
     const updatedFactoryOwners = factoryOwners.map(owner => owner === ownerRenameForm.oldName ? ownerRenameForm.newName : owner);
     setFactoryOwners(updatedFactoryOwners);
+    
+    // 实时保存到Supabase
+    Promise.all([
+      saveSuppliers(updatedSuppliers),
+      savePayments(updatedPayments),
+      saveFactoryOwners(updatedFactoryOwners)
+    ]).then(() => {
+      console.log('工厂所有者重命名后数据已实时保存到Supabase');
+    }).catch(err => {
+      console.error('保存数据失败:', err);
+    });
+    
     setActiveModal(null);
   };
 
@@ -1381,6 +1414,17 @@ function App() {
     const quarterType = isCurrentOrNextQuarter(invoiceToDelete.date);
     const { start, end } = getCurrentQuarterRange();
     
+    // 删除记录
+    const updatedInvoices = invoices.filter(inv => inv.id !== invoiceId);
+    setInvoices(updatedInvoices);
+    
+    // 实时保存到Supabase
+    saveInvoices(updatedInvoices).then(() => {
+      console.log('发票删除后已实时保存到Supabase');
+    }).catch(err => {
+      console.error('保存发票数据失败:', err);
+    });
+    
     // 只有当前季度或下个季度的发票才需要特别提示
     if (quarterType === 'current' || quarterType === 'next') {
       const supplier = suppliers.find(s => s.id === invoiceToDelete.supplierId);
@@ -1388,13 +1432,9 @@ function App() {
         const amount = invoiceToDelete.amount;
         
         // 计算删除该发票后的开票总额（排除即将删除的发票）
-        const otherInvoicesTotal = invoices
-          .filter(i => i.supplierId === supplier.id && i.id !== invoiceId)
+        const otherInvoicesTotal = updatedInvoices
+          .filter(i => i.supplierId === supplier.id)
           .reduce((sum, i) => sum + i.amount, 0);
-        
-        // 删除记录
-        const updatedInvoices = invoices.filter(inv => inv.id !== invoiceId);
-        setInvoices(updatedInvoices);
         
         // 计算正确的剩余额度：固定额度 - 其他发票总额
         const remainingQuota = supplier.quarterlyLimit - otherInvoicesTotal;
@@ -1402,10 +1442,6 @@ function App() {
         const quarterText = quarterType === 'current' ? '当前季度' : '下个季度';
         alert('开票记录已删除！\n\n额度恢复详情：\n• 开票主体：' + supplier.owner + ' (' + supplier.name + ')\n• 发票季度：' + quarterText + '\n• 删除金额：¥' + amount.toLocaleString() + '\n• 当前剩余额度：¥' + remainingQuota.toLocaleString());
       } else {
-        // 删除记录
-        const updatedInvoices = invoices.filter(inv => inv.id !== invoiceId);
-        setInvoices(updatedInvoices);
-        
         alert('开票记录已删除，但未找到对应的开票主体。');
       }
     } else {
@@ -1413,10 +1449,6 @@ function App() {
       if (!confirm(`此开票记录不属于当前季度或下个季度。\n开票日期：${invoiceToDelete.date}\n当前季度：${start} 至 ${end}\n\n删除此发票不会影响当前可用额度。\n\n是否确认删除？`)) {
         return;
       }
-      
-      // 删除记录
-      const updatedInvoices = invoices.filter(inv => inv.id !== invoiceId);
-      setInvoices(updatedInvoices);
       
       alert('开票记录已删除。由于此发票不属于当前季度或下个季度，不影响当前可用额度。');
     }
@@ -1442,15 +1474,12 @@ function App() {
       const updatedPayments = payments.filter(payment => payment.id !== paymentId);
       setPayments(updatedPayments);
 
-      // 更新本地存储
-      const updatedData = {
-        ...backupData,
-        data: {
-          ...backupData.data,
-          payments: updatedPayments
-        }
-      };
-      setBackupData(updatedData);
+      // 实时保存到Supabase
+      savePayments(updatedPayments).then(() => {
+        console.log('付款删除后已实时保存到Supabase');
+      }).catch(err => {
+        console.error('保存付款数据失败:', err);
+      });
 
       alert('支付货款记录已删除！');
     }
@@ -1606,6 +1635,13 @@ function App() {
       };
       const updatedPayments = [...payments, p];
       setPayments(updatedPayments);
+      
+      // 实时保存到Supabase
+      savePayments(updatedPayments).then(() => {
+        console.log('付款数据已实时保存到Supabase');
+      }).catch(err => {
+        console.error('保存付款数据失败:', err);
+      });
     } else if (activeModal === 'addInvoice') {
       if (!transaction.storeId || !transaction.supplierId) return;
        const i: InvoiceRecord = {
@@ -1619,6 +1655,13 @@ function App() {
       };
       const updatedInvoices = [...invoices, i];
       setInvoices(updatedInvoices);
+      
+      // 实时保存到Supabase
+      saveInvoices(updatedInvoices).then(() => {
+        console.log('发票数据已实时保存到Supabase');
+      }).catch(err => {
+        console.error('保存发票数据失败:', err);
+      });
     }
     setTransaction({ storeId: '', supplierId: '', amount: '', date: '', invoiceType: InvoiceType.NORMAL, taxRate: 1 });
     setActiveModal(null);
@@ -1730,7 +1773,7 @@ function App() {
     
   };
 
-  const handleSwitchQuarter = (quarter: string) => {
+  const handleSwitchQuarter = async (quarter: string) => {
     if (quarter === currentQuarter) return;
     
     // 保存当前季度数据到quarterData
@@ -1743,6 +1786,21 @@ function App() {
         payments: [...payments]
       }
     };
+    
+    // 同时保存到Supabase
+    try {
+      await Promise.all([
+        saveStores(stores),
+        saveSuppliers(suppliers),
+        saveInvoices(invoices),
+        savePayments(payments),
+        saveQuarterData(newQuarterData),
+        saveCurrentQuarter(quarter)
+      ]);
+      console.log('季度切换前数据已保存到Supabase');
+    } catch (error) {
+      console.error('保存季度数据失败:', error);
+    }
     
     // 加载目标季度的数据
     // 注意：使用newQuarterData，而不是旧的quarterData状态
