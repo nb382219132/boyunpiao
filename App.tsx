@@ -3028,12 +3028,12 @@ function App() {
                                       const latestInvoice = storeInvoices[storeInvoices.length - 1];
                                       
                                       return (
-                                        <div key={idx} className="relative group">
+                                        <div key={idx} className="relative group" style={{ zIndex: 100 }}>
                                           <span className="inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs rounded cursor-pointer">
                                             {store.storeName}
                                           </span>
-                                          {/* 浮窗 */}
-                                          <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-3 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                                          {/* 浮窗 - 改为显示在下方避免被遮挡 */}
+                                          <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200" style={{ zIndex: 9999 }}>
                                             <div className="text-sm font-semibold text-gray-800 mb-2 pb-2 border-b border-gray-100">
                                               {store.companyName}
                                             </div>
@@ -3051,8 +3051,8 @@ function App() {
                                             ) : (
                                               <div className="text-xs text-gray-400">暂无开票记录</div>
                                             )}
-                                            {/* 箭头 */}
-                                            <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
+                                            {/* 箭头 - 改为指向上方 */}
+                                            <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
                                           </div>
                                         </div>
                                       );
