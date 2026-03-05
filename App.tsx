@@ -2628,14 +2628,55 @@ function App() {
         {/* Top Navigation Bar */}
         <header className="bg-white border-b border-slate-200 p-4 sticky top-0 z-10">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold text-slate-800">
-              {currentView === 'dashboard' && '数据总览'}
-              {currentView === 'stores' && '店铺管理'}
-              {currentView === 'suppliers' && '工厂管理'}
-              {currentView === 'userInvoices' && '开票记录'}
-              {currentView === 'admin' && '系统管理'}
-              {currentView === 'chat' && 'AI助手'}
-            </h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-bold text-slate-800">
+                {currentView === 'dashboard' && '数据总览'}
+                {currentView === 'stores' && '店铺管理'}
+                {currentView === 'suppliers' && '工厂管理'}
+                {currentView === 'userInvoices' && '开票记录'}
+                {currentView === 'admin' && '系统管理'}
+                {currentView === 'chat' && 'AI助手'}
+              </h1>
+              {/* 工厂管理搜索框 */}
+              {currentView === 'suppliers' && (
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="搜索工厂或开票主体..."
+                    className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+                    value={supplierSearchTerm}
+                    onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                  />
+                </div>
+              )}
+              {/* 店铺管理搜索框 */}
+              {currentView === 'stores' && (
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="搜索店铺..."
+                    className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+                    value={storeSearchTerm}
+                    onChange={(e) => setStoreSearchTerm(e.target.value)}
+                  />
+                </div>
+              )}
+              {/* 开票记录搜索框 */}
+              {currentView === 'userInvoices' && (
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="搜索店铺、工厂、开票主体或金额"
+                    className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-80"
+                    value={invoiceSearchTerm}
+                    onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               {/* 同步状态指示器 */}
               {syncStatus !== 'idle' && (
@@ -2849,44 +2890,31 @@ function App() {
         {/* Stores View */}
         {currentView === 'stores' && (
           <div className="p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-              <div>
-                <div className="flex flex-wrap gap-2">
-                  {/* 过滤平台列表，高级用户显示所有平台，普通用户只显示自己有权限的平台 */}
-                  {(() => {
-                    const allPlatforms = ['all', StorePlatform.TIANMAO, StorePlatform.PINDUODUO, StorePlatform.DOUYIN, StorePlatform.JD] as const;
-                    const userLevel = user?.user_metadata?.level || 'normal';
-                    const userPlatforms = user?.user_metadata?.platforms || [];
-                    
-                    // 高级用户显示所有平台
-                    if (userLevel === 'advanced' || userPlatforms.length === 0) {
-                      return allPlatforms;
-                    }
-                    
-                    // 普通用户只显示自己有权限的平台，加上"全部"选项
-                    return ['all', ...userPlatforms];
-                  })().map(platform => (
-                    <button
-                      key={platform}
-                      onClick={() => setSelectedPlatform(platform as StorePlatform | 'all')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${selectedPlatform === platform 
-                        ? 'bg-red-500 text-white' 
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                    >
-                      {platform === 'all' ? '全部' : platform}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <input 
-                  type="text" 
-                  placeholder="搜索店铺..." 
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={storeSearchTerm}
-                  onChange={(e) => setStoreSearchTerm(e.target.value)}
-                />
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {/* 过滤平台列表，高级用户显示所有平台，普通用户只显示自己有权限的平台 */}
+              {(() => {
+                const allPlatforms = ['all', StorePlatform.TIANMAO, StorePlatform.PINDUODUO, StorePlatform.DOUYIN, StorePlatform.JD] as const;
+                const userLevel = user?.user_metadata?.level || 'normal';
+                const userPlatforms = user?.user_metadata?.platforms || [];
+                
+                // 高级用户显示所有平台
+                if (userLevel === 'advanced' || userPlatforms.length === 0) {
+                  return allPlatforms;
+                }
+                
+                // 普通用户只显示自己有权限的平台，加上"全部"选项
+                return ['all', ...userPlatforms];
+              })().map(platform => (
+                <button
+                  key={platform}
+                  onClick={() => setSelectedPlatform(platform as StorePlatform | 'all')}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${selectedPlatform === platform 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {platform === 'all' ? '全部' : platform}
+                </button>
+              ))}
             </div>
             
             {/* Store List */}
@@ -2933,20 +2961,6 @@ function App() {
         {/* Suppliers View */}
         {currentView === 'suppliers' && (
           <div className="p-6 space-y-6">
-            {/* Header with title and search */}
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-slate-800">工厂管理</h3>
-              <div className="relative">
-                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="搜索工厂或开票主体..."
-                  className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
-                  value={supplierSearchTerm}
-                  onChange={(e) => setSupplierSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
 
             {/* Supplier List - New Layout */}
             <div className="space-y-4">
@@ -3780,20 +3794,6 @@ function App() {
         {/* User Invoices View */}
         {currentView === 'userInvoices' && (
           <div className="p-6 space-y-6">
-            {/* Header with title and search */}
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-slate-800">开票记录</h3>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="搜索：店铺、工厂、开票主体或金额"
-                  value={invoiceSearchTerm}
-                  onChange={(e) => setInvoiceSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-80"
-                />
-              </div>
-            </div>
 
             {/* Search and Filter Bar */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
