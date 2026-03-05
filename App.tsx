@@ -3867,11 +3867,11 @@ function App() {
                         <td className="px-4 py-3 text-sm">
                           <div className="flex flex-col">
                             <span className="font-medium text-slate-800">
-                              {store?.storeName || '未知店铺'} - {supplier?.name || '未知主体'}
+                              {store?.storeName || '未知店铺'} - {store?.companyName || '未知公司'}
                             </span>
-                            {factoryOwner && (
+                            {supplier && (
                               <span className="text-xs text-slate-500 mt-0.5">
-                                {factoryOwner} - {supplier?.type === 'individual' ? '个体工商户' : supplier?.type === 'company' ? '企业' : '大额个体户'}
+                                {supplier.owner || '未知工厂'} - {supplier.name || '未知主体'}
                               </span>
                             )}
                           </div>
