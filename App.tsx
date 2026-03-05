@@ -346,6 +346,15 @@ function App() {
   // 初始加载数据和创建管理员账号
   useEffect(() => {
     const initApp = async () => {
+      // 清空本地存储，确保只使用 Supabase 数据
+      const keys = ['stores', 'suppliers', 'invoices', 'payments', 'quarterData', 'availableQuarters', 'currentQuarter', 'factoryOwners'];
+      keys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+          console.log(`已清空本地存储: ${key}`);
+        }
+      });
+      
       // 创建管理员账号
       await createAdminAccount();
       // 加载数据

@@ -1,5 +1,5 @@
--- Supabase 表结构配置脚本
--- 执行此脚本前，请确保已在 Supabase 控制台中创建项目
+-- Supabase 完整部署脚本
+-- 包含表结构创建和初始数据
 
 -- 1. 店铺表 (stores)
 CREATE TABLE IF NOT EXISTS stores (
@@ -94,15 +94,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 插入默认数据
--- 默认当前季度
-INSERT INTO current_quarter (id, quarter_name) VALUES (1, '2025Q3')
-ON CONFLICT (id) DO UPDATE SET quarter_name = EXCLUDED.quarter_name;
-
--- 默认可用季度
-INSERT INTO available_quarters (quarter_name) VALUES ('2025Q3')
-ON CONFLICT (quarter_name) DO NOTHING;
-
 -- 创建更新时间触发器
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -113,24 +104,31 @@ END;
 $$ language 'plpgsql';
 
 -- 为所有表添加更新时间触发器
+DROP TRIGGER IF EXISTS update_stores_updated_at ON stores;
 CREATE TRIGGER update_stores_updated_at BEFORE UPDATE ON stores
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_suppliers_updated_at ON suppliers;
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON invoices;
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_quarter_data_updated_at ON quarter_data;
 CREATE TRIGGER update_quarter_data_updated_at BEFORE UPDATE ON quarter_data
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_current_quarter_updated_at ON current_quarter;
 CREATE TRIGGER update_current_quarter_updated_at BEFORE UPDATE ON current_quarter
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -145,7 +143,18 @@ ALTER TABLE current_quarter ENABLE ROW LEVEL SECURITY;
 ALTER TABLE factory_owners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- 创建允许所有操作的策略（开发阶段使用，生产环境应限制权限）
+-- 删除旧策略（如果存在）
+DROP POLICY IF EXISTS "Allow all" ON stores;
+DROP POLICY IF EXISTS "Allow all" ON suppliers;
+DROP POLICY IF EXISTS "Allow all" ON invoices;
+DROP POLICY IF EXISTS "Allow all" ON payments;
+DROP POLICY IF EXISTS "Allow all" ON quarter_data;
+DROP POLICY IF EXISTS "Allow all" ON available_quarters;
+DROP POLICY IF EXISTS "Allow all" ON current_quarter;
+DROP POLICY IF EXISTS "Allow all" ON factory_owners;
+DROP POLICY IF EXISTS "Allow all" ON users;
+
+-- 创建允许所有操作的策略（开发阶段使用）
 CREATE POLICY "Allow all" ON stores FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON suppliers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON invoices FOR ALL USING (true) WITH CHECK (true);
@@ -155,3 +164,18 @@ CREATE POLICY "Allow all" ON available_quarters FOR ALL USING (true) WITH CHECK 
 CREATE POLICY "Allow all" ON current_quarter FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON factory_owners FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON users FOR ALL USING (true) WITH CHECK (true);
+
+-- ==================== 初始化数据 ====================
+
+-- 插入默认当前季度
+INSERT INTO current_quarter (id, quarter_name) VALUES (1, '2025Q3')
+ON CONFLICT (id) DO UPDATE SET quarter_name = EXCLUDED.quarter_name;
+
+-- 插入默认可用季度
+INSERT INTO available_quarters (quarter_name) VALUES ('2025Q3')
+ON CONFLICT (quarter_name) DO NOTHING;
+
+-- 初始化季度数据（空数据）
+INSERT INTO quarter_data (quarter_name, stores, suppliers, invoices, payments) VALUES
+('2025Q3', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)
+ON CONFLICT (quarter_name) DO NOTHING;

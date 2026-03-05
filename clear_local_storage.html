@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>清空本地存储</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #dc2626;
+        }
+        .success {
+            color: #10b981;
+            margin-top: 20px;
+        }
+        .info {
+            background-color: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>清空本地存储数据</h1>
+    <p>点击下面的按钮清空浏览器 localStorage 中的所有数据：</p>
+    
+    <button onclick="clearStorage()">清空本地存储</button>
+    
+    <div id="result"></div>
+    
+    <div class="info">
+        <h3>将清空以下数据：</h3>
+        <ul id="storageList"></ul>
+    </div>
+
+    <script>
+        // 显示当前存储的键
+        function showStorageKeys() {
+            const list = document.getElementById('storageList');
+            list.innerHTML = '';
+            
+            const keys = [
+                'stores',
+                'suppliers', 
+                'invoices',
+                'payments',
+                'quarterData',
+                'availableQuarters',
+                'currentQuarter',
+                'factoryOwners'
+            ];
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                const li = document.createElement('li');
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        const count = Array.isArray(parsed) ? parsed.length : '有数据';
+                        li.textContent = `${key}: ${count} 条记录`;
+                        li.style.color = '#059669';
+                    } catch (e) {
+                        li.textContent = `${key}: 有数据`;
+                        li.style.color = '#059669';
+                    }
+                } else {
+                    li.textContent = `${key}: 无数据`;
+                    li.style.color = '#9ca3af';
+                }
+                list.appendChild(li);
+            });
+        }
+        
+        function clearStorage() {
+            const keys = [
+                'stores',
+                'suppliers',
+                'invoices', 
+                'payments',
+                'quarterData',
+                'availableQuarters',
+                'currentQuarter',
+                'factoryOwners'
+            ];
+            
+            let cleared = 0;
+            keys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    cleared++;
+                }
+            });
+            
+            const result = document.getElementById('result');
+            result.innerHTML = `<p class="success">成功清空 ${cleared} 项本地存储数据！</p>`;
+            
+            showStorageKeys();
+        }
+        
+        // 页面加载时显示当前存储状态
+        showStorageKeys();
+    </script>
+</body>
+</html>
