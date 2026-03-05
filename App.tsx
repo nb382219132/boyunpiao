@@ -109,7 +109,7 @@ const isSkipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
 function App() {
   const [currentView, setCurrentView] = useState<View>(isSkipAuth ? 'dashboard' : 'login');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPlatform, setSelectedPlatform] = useState<StorePlatform | 'all'>(StorePlatform.TIANMAO);
+  const [selectedPlatform, setSelectedPlatform] = useState<StorePlatform | 'all'>('all');
 
   // 用户认证状态
   const [user, setUser] = useState<any>(isSkipAuth ? { id: 'local-dev', user_metadata: { username: '开发者', role: 'admin' } } : null);
