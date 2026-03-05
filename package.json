@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "set VITE_SKIP_AUTH=true && vite",
     "build": "vite build",
+    "build:prod": "set VITE_SKIP_AUTH=false && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

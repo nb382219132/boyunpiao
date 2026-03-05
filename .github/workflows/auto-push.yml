@@ -1,0 +1,37 @@
+name: Auto Push to Main
+
+on:
+  push:
+    branches:
+      - develop
+      - dev
+      - feature/*
+      - bugfix/*
+
+permissions:
+  contents: write
+
+jobs:
+  auto-merge-to-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Merge to main
+        run: |
+          git checkout main
+          git merge --no-ff ${{ github.ref_name }} -m "Auto-merge ${{ github.ref_name }} to main [skip ci]"
+          git push origin main
+
+      - name: Delete source branch
+        if: startsWith(github.ref_name, 'feature/') || startsWith(github.ref_name, 'bugfix/')
+        run: |
+          git push origin --delete ${{ github.ref_name }}

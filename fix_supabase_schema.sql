@@ -1,5 +1,6 @@
 -- Supabase 表结构修复脚本
 -- 执行此脚本将检查并添加所有缺失的字段
+-- 注意：PostgreSQL 列名不区分大小写，统一使用小写检查
 
 -- ============================================
 -- 1. 修复 stores 表
@@ -8,38 +9,38 @@
 -- 检查并添加 stores 表的字段
 DO $$
 BEGIN
-    -- 添加 companyName 字段
+    -- 添加 companyname 字段 (PostgreSQL 中存储为小写)
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'stores' AND column_name = 'companyName') THEN
-        ALTER TABLE stores ADD COLUMN companyName TEXT;
+                   WHERE table_name = 'stores' AND column_name = 'companyname') THEN
+        ALTER TABLE stores ADD COLUMN "companyName" TEXT;
         RAISE NOTICE 'Added column companyName to stores';
     END IF;
 
-    -- 添加 storeName 字段
+    -- 添加 storename 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'stores' AND column_name = 'storeName') THEN
-        ALTER TABLE stores ADD COLUMN storeName TEXT;
+                   WHERE table_name = 'stores' AND column_name = 'storename') THEN
+        ALTER TABLE stores ADD COLUMN "storeName" TEXT;
         RAISE NOTICE 'Added column storeName to stores';
     END IF;
 
-    -- 添加 quarterIncome 字段
+    -- 添加 quarterincome 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'stores' AND column_name = 'quarterIncome') THEN
-        ALTER TABLE stores ADD COLUMN quarterIncome NUMERIC DEFAULT 0;
+                   WHERE table_name = 'stores' AND column_name = 'quarterincome') THEN
+        ALTER TABLE stores ADD COLUMN "quarterIncome" NUMERIC DEFAULT 0;
         RAISE NOTICE 'Added column quarterIncome to stores';
     END IF;
 
-    -- 添加 quarterExpenses 字段
+    -- 添加 quarterexpenses 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'stores' AND column_name = 'quarterExpenses') THEN
-        ALTER TABLE stores ADD COLUMN quarterExpenses NUMERIC DEFAULT 0;
+                   WHERE table_name = 'stores' AND column_name = 'quarterexpenses') THEN
+        ALTER TABLE stores ADD COLUMN "quarterExpenses" NUMERIC DEFAULT 0;
         RAISE NOTICE 'Added column quarterExpenses to stores';
     END IF;
 
-    -- 添加 taxType 字段
+    -- 添加 taxtype 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'stores' AND column_name = 'taxType') THEN
-        ALTER TABLE stores ADD COLUMN taxType TEXT DEFAULT 'general';
+                   WHERE table_name = 'stores' AND column_name = 'taxtype') THEN
+        ALTER TABLE stores ADD COLUMN "taxType" TEXT DEFAULT 'general';
         RAISE NOTICE 'Added column taxType to stores';
     END IF;
 
@@ -78,10 +79,10 @@ BEGIN
         RAISE NOTICE 'Added column type to suppliers';
     END IF;
 
-    -- 添加 quarterlyLimit 字段
+    -- 添加 quarterlylimit 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'suppliers' AND column_name = 'quarterlyLimit') THEN
-        ALTER TABLE suppliers ADD COLUMN quarterlyLimit NUMERIC DEFAULT 280000;
+                   WHERE table_name = 'suppliers' AND column_name = 'quarterlylimit') THEN
+        ALTER TABLE suppliers ADD COLUMN "quarterlyLimit" NUMERIC DEFAULT 280000;
         RAISE NOTICE 'Added column quarterlyLimit to suppliers';
     END IF;
 
@@ -99,17 +100,17 @@ END $$;
 
 DO $$
 BEGIN
-    -- 添加 storeId 字段
+    -- 添加 storeid 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'invoices' AND column_name = 'storeId') THEN
-        ALTER TABLE invoices ADD COLUMN storeId TEXT;
+                   WHERE table_name = 'invoices' AND column_name = 'storeid') THEN
+        ALTER TABLE invoices ADD COLUMN "storeId" TEXT;
         RAISE NOTICE 'Added column storeId to invoices';
     END IF;
 
-    -- 添加 supplierId 字段
+    -- 添加 supplierid 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'invoices' AND column_name = 'supplierId') THEN
-        ALTER TABLE invoices ADD COLUMN supplierId TEXT;
+                   WHERE table_name = 'invoices' AND column_name = 'supplierid') THEN
+        ALTER TABLE invoices ADD COLUMN "supplierId" TEXT;
         RAISE NOTICE 'Added column supplierId to invoices';
     END IF;
 
@@ -127,17 +128,17 @@ BEGIN
         RAISE NOTICE 'Added column date to invoices';
     END IF;
 
-    -- 添加 invoiceType 字段
+    -- 添加 invoicetype 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'invoices' AND column_name = 'invoiceType') THEN
-        ALTER TABLE invoices ADD COLUMN invoiceType TEXT DEFAULT '普通发票';
+                   WHERE table_name = 'invoices' AND column_name = 'invoicetype') THEN
+        ALTER TABLE invoices ADD COLUMN "invoiceType" TEXT DEFAULT '普通发票';
         RAISE NOTICE 'Added column invoiceType to invoices';
     END IF;
 
-    -- 添加 taxRate 字段
+    -- 添加 taxrate 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'invoices' AND column_name = 'taxRate') THEN
-        ALTER TABLE invoices ADD COLUMN taxRate NUMERIC DEFAULT 0;
+                   WHERE table_name = 'invoices' AND column_name = 'taxrate') THEN
+        ALTER TABLE invoices ADD COLUMN "taxRate" NUMERIC DEFAULT 0;
         RAISE NOTICE 'Added column taxRate to invoices';
     END IF;
 
@@ -155,10 +156,10 @@ END $$;
 
 DO $$
 BEGIN
-    -- 添加 supplierId 字段
+    -- 添加 supplierid 字段
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'payments' AND column_name = 'supplierId') THEN
-        ALTER TABLE payments ADD COLUMN supplierId TEXT;
+                   WHERE table_name = 'payments' AND column_name = 'supplierid') THEN
+        ALTER TABLE payments ADD COLUMN "supplierId" TEXT;
         RAISE NOTICE 'Added column supplierId to payments';
     END IF;
 

@@ -103,14 +103,17 @@ const ModalBackdrop: React.FC<ModalBackdropProps> = ({ children, title, onClose 
   </div>
 );
 
+// 检查是否跳过认证（本地调试模式）
+const isSkipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
+
 function App() {
-  const [currentView, setCurrentView] = useState<View>('login');
+  const [currentView, setCurrentView] = useState<View>(isSkipAuth ? 'dashboard' : 'login');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlatform, setSelectedPlatform] = useState<StorePlatform | 'all'>(StorePlatform.TIANMAO);
-  
+
   // 用户认证状态
-  const [user, setUser] = useState<any>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [user, setUser] = useState<any>(isSkipAuth ? { id: 'local-dev', user_metadata: { username: '开发者', role: 'admin' } } : null);
+  const [isAuthLoading, setIsAuthLoading] = useState(!isSkipAuth);
   const [authError, setAuthError] = useState<string | null>(null);
   
   // 登录表单状态
@@ -354,12 +357,19 @@ function App() {
 
   // 监听认证状态变化
   useEffect(() => {
+    // 本地调试模式：跳过认证监听
+    if (isSkipAuth) {
+      console.log('本地调试模式：跳过认证监听');
+      loadData();
+      return;
+    }
+
     let isMounted = true;
-    
+
     try {
       const authSubscription = subscribeToAuthChanges((user) => {
         if (!isMounted) return;
-        
+
         setUser(user);
         setIsAuthLoading(false);
         if (user) {
@@ -694,6 +704,7 @@ function App() {
 
   // --- Aggregated Stats ---
   const totalIncome = stores.reduce((acc, s) => acc + s.quarterIncome, 0);
+  const totalExpenses = stores.reduce((acc, s) => acc + s.quarterExpenses, 0);
   const totalInvoiced = invoices.reduce((acc, i) => acc + i.amount, 0);
   const totalQuotaAvailable = suppliers.reduce((acc, s) => {
     const used = getSupplierInvoicedTotal(s.id);
@@ -754,6 +765,16 @@ function App() {
      }, 0);
      return { label: owner, value: totalRemaining };
   }).sort((a, b) => b.value - a.value);
+
+  // 可用发票额度数据（按工厂分组，排除一般纳税人主体后计算剩余额度总和）
+  const sortedAvailableQuotaData = uniqueOwners.map(owner => {
+    const ownerSuppliers = suppliers.filter(s => s.owner === owner && s.type !== EntityType.GENERAL);
+    const totalRemaining = ownerSuppliers.reduce((sum, s) => {
+      const used = getSupplierInvoicedTotal(s.id);
+      return sum + Math.max(0, s.quarterlyLimit - used);
+    }, 0);
+    return { label: owner, value: totalRemaining };
+  }).filter(i => i.value > 0).sort((a, b) => b.value - a.value);
 
 
   // --- Export Helpers ---
@@ -2145,14 +2166,7 @@ function App() {
                                           <button 
                                               onClick={() => {
                                                   if (confirm(`确定要切换到 ${quarter} 的数据吗？\n\n当前未保存的数据将会丢失。`)) {
-                                                      setCurrentQuarter(quarter);
-                                                      // 加载该季度的数据
-                                                      if (quarterData[quarter]) {
-                                                          setStores(quarterData[quarter].stores || []);
-                                                          setSuppliers(quarterData[quarter].suppliers || []);
-                                                          setInvoices(quarterData[quarter].invoices || []);
-                                                          setPayments(quarterData[quarter].payments || []);
-                                                      }
+                                                      handleSwitchQuarter(quarter);
                                                       setActiveModal(null);
                                                   }
                                               }}
@@ -2322,43 +2336,54 @@ function App() {
             <div>
               <label className="text-xs text-slate-500 mb-1 block">开票主体</label>
               <SearchableSelect
-                options={suppliers.map(s => ({ value: s.id, label: `${s.owner} (${s.name})` }))}
+                options={suppliers.map(s => {
+                  const usedAmount = getSupplierInvoicedTotal(s.id);
+                  const remaining = s.quarterlyLimit - usedAmount;
+                  return { 
+                    value: s.id, 
+                    label: `${s.owner} (${s.name}) - 剩余: ¥${remaining.toLocaleString()}` 
+                  };
+                })}
                 value={transaction.supplierId}
                 onChange={val => setTransaction({...transaction, supplierId: val || ''})}
                 placeholder="选择开票主体"
               />
             </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">开票金额</label>
-              <input className="w-full p-2 border rounded" type="number" placeholder="开票金额" value={transaction.amount} onChange={e => setTransaction({...transaction, amount: e.target.value})} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">发票类型</label>
+                <SearchableSelect
+                  options={[
+                    { value: InvoiceType.NORMAL, label: InvoiceType.NORMAL },
+                    { value: InvoiceType.SPECIAL, label: InvoiceType.SPECIAL }
+                  ]}
+                  value={transaction.invoiceType}
+                  onChange={val => setTransaction({...transaction, invoiceType: val as InvoiceType, taxRate: val === InvoiceType.NORMAL ? 1 : transaction.taxRate})}
+                  placeholder="选择发票类型"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">税率 (%)</label>
+                <input 
+                  className="w-full p-2 border rounded" 
+                  type="number" 
+                  placeholder="税率" 
+                  value={transaction.taxRate} 
+                  onChange={e => setTransaction({...transaction, taxRate: parseFloat(e.target.value) || 0})}
+                  step="0.1"
+                  min="0"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">发票类型</label>
-              <SearchableSelect
-                options={[
-                  { value: InvoiceType.NORMAL, label: InvoiceType.NORMAL },
-                  { value: InvoiceType.SPECIAL, label: InvoiceType.SPECIAL }
-                ]}
-                value={transaction.invoiceType}
-                onChange={val => setTransaction({...transaction, invoiceType: val as InvoiceType, taxRate: val === InvoiceType.NORMAL ? 1 : transaction.taxRate})}
-                placeholder="选择发票类型"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">税率 (%)</label>
-              <input 
-                className="w-full p-2 border rounded" 
-                type="number" 
-                placeholder="税率" 
-                value={transaction.taxRate} 
-                onChange={e => setTransaction({...transaction, taxRate: parseFloat(e.target.value) || 0})}
-                step="0.1"
-                min="0"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">开票日期</label>
-              <input className="w-full p-2 border rounded" type="date" value={transaction.date} onChange={e => setTransaction({...transaction, date: e.target.value})} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">开票金额</label>
+                <input className="w-full p-2 border rounded" type="number" placeholder="开票金额" value={transaction.amount} onChange={e => setTransaction({...transaction, amount: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">开票日期</label>
+                <input className="w-full p-2 border rounded" type="date" value={transaction.date} onChange={e => setTransaction({...transaction, date: e.target.value})} />
+              </div>
             </div>
             <button onClick={handleAddTransaction} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700">添加开票记录</button>
           </div>
@@ -2395,11 +2420,16 @@ function App() {
       {/* Sidebar Navigation */}
       <div className="w-full md:w-64 bg-slate-900 p-4 sticky top-0 h-screen overflow-y-auto hidden md:block flex flex-col">
         {/* Logo and Quarter */}
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            </div>
+            <span className="text-xl font-bold text-white">{currentQuarter}</span>
           </div>
-          <span className="text-xl font-bold text-white">{currentQuarter}</span>
+          {isLoading && (
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-400"></div>
+          )}
         </div>
         
         {/* Navigation Links */}
@@ -2507,19 +2537,105 @@ function App() {
           </div>
         </header>
         
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-          </div>
-        )}
-        
         {/* Dashboard View */}
         {currentView === 'dashboard' && (
           <div className="p-6 space-y-6">
+            {/* Annual Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-blue-100 mb-1">年度总营收</p>
+                    <h3 className="text-2xl font-bold">¥{(totalIncome * 4).toLocaleString()}</h3>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-2">
+                    <TrendingUp size={20} className="text-white" />
+                  </div>
+                </div>
+                <p className="text-xs text-blue-100 mt-2">预估全年收入（季度×4）</p>
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度营收排行</h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
+                    {sortedIncomeData.map((item, idx) => (
+                      <div key={idx} className="text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
+                          <span className="font-mono text-gray-500">¥{(item.value * 4 / 10000).toFixed(2)}万</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-blue-500" style={{ width: `${(item.value / Math.max(...sortedIncomeData.map(i => i.value))) * 100}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-amber-100 mb-1">年度发票缺口</p>
+                    <h3 className="text-2xl font-bold">¥{(totalGap * 4).toLocaleString()}</h3>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-2">
+                    <ArrowUpRight size={20} className="text-white" />
+                  </div>
+                </div>
+                <p className="text-xs text-amber-100 mt-2">预估全年缺口（季度×4）</p>
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度缺口排行</h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
+                    {sortedGapData.map((item, idx) => (
+                      <div key={idx} className="text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
+                          <span className="font-mono text-gray-500">¥{(item.value * 4 / 10000).toFixed(2)}万</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${(item.value / Math.max(...sortedGapData.map(i => i.value))) * 100}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-rose-100 mb-1">年度应纳税额</p>
+                    <h3 className="text-2xl font-bold">¥{((totalIncome - totalExpenses) * 0.13 * 4).toLocaleString()}</h3>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-2">
+                    <Receipt size={20} className="text-white" />
+                  </div>
+                </div>
+                <p className="text-xs text-rose-100 mt-2">按13%税率预估（季度×4）</p>
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                  <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度纳税排行</h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
+                    {stores.map(s => {
+                      const tax = (s.quarterIncome - s.quarterExpenses) * 0.13 * 4;
+                      return { label: s.storeName, value: tax };
+                    }).filter(i => i.value > 0).sort((a, b) => b.value - a.value).map((item, idx, arr) => (
+                      <div key={idx} className="text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-gray-700 truncate max-w-[140px]" title={item.label}>{item.label}</span>
+                          <span className="font-mono text-gray-500">¥{(item.value / 10000).toFixed(2)}万</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-rose-500" style={{ width: `${(item.value / Math.max(...arr.map(i => i.value))) * 100}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">季度总营收</p>
@@ -2529,52 +2645,33 @@ function App() {
                     <TrendingUp size={20} className="text-green-700" />
                   </div>
                 </div>
-                <KpiTooltip data={sortedIncomeData} title="按店铺排序" />
+                <KpiTooltip title="店铺收入排行" items={sortedIncomeData} colorClass="bg-green-500" />
               </div>
               
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">已收发票</p>
-                    <h3 className="text-2xl font-bold text-slate-800">¥{totalInvoiced.toLocaleString()}</h3>
-                  </div>
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <Receipt size={20} className="text-blue-700" />
-                  </div>
-                </div>
-                <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${Math.min(100, (totalIncome - totalGap) > 0 ? (totalInvoiced / (totalIncome - totalGap)) * 100 : 0)}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">已完成 {Math.min(100, (totalIncome - totalGap) > 0 ? Math.round((totalInvoiced / (totalIncome - totalGap)) * 100) : 0)}% 的发票收集</p>
-              </div>
-              
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-slate-500 mb-1">待抵扣缺口</p>
+                    <p className="text-sm text-slate-500 mb-1">发票缺口</p>
                     <h3 className="text-2xl font-bold text-amber-700">¥{totalGap.toLocaleString()}</h3>
                   </div>
                   <div className="bg-amber-100 rounded-full p-2">
                     <ArrowUpRight size={20} className="text-amber-700" />
                   </div>
                 </div>
-                <KpiTooltip data={sortedGapData} title="按店铺排序" />
+                <KpiTooltip title="店铺发票缺口排行" items={sortedGapData} colorClass="bg-amber-500" />
               </div>
-              
-              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+
+              <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">剩余开票额度</p>
+                    <p className="text-sm text-slate-500 mb-1">可用发票额度</p>
                     <h3 className="text-2xl font-bold text-emerald-700">¥{totalQuotaAvailable.toLocaleString()}</h3>
                   </div>
                   <div className="bg-emerald-100 rounded-full p-2">
                     <Shield size={20} className="text-emerald-700" />
                   </div>
                 </div>
-                <KpiTooltip data={sortedQuotaData} title="按工厂排序" />
+                <KpiTooltip title="工厂可用额度排行（不含一般纳税人）" items={sortedAvailableQuotaData} colorClass="bg-emerald-500" />
               </div>
             </div>
             
@@ -2636,7 +2733,6 @@ function App() {
           <div className="p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-800 mb-3">店铺管理</h2>
                 <div className="flex flex-wrap gap-2">
                   {/* 过滤平台列表，高级用户显示所有平台，普通用户只显示自己有权限的平台 */}
                   {(() => {
@@ -2672,10 +2768,6 @@ function App() {
                   value={storeSearchTerm}
                   onChange={(e) => setStoreSearchTerm(e.target.value)}
                 />
-                <button onClick={handleOpenAddStore} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                  <Plus size={16} />
-                  <span>新增店铺</span>
-                </button>
               </div>
             </div>
             
@@ -2723,21 +2815,21 @@ function App() {
         {/* Suppliers View */}
         {currentView === 'suppliers' && (
           <div className="p-6 space-y-6">
-            {/* Header */}
+            {/* Header with title and search */}
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">工厂发票管理</h2>
-              <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
-                  <Download size={16} />
-                  <span>导出数据</span>
-                </button>
-                <button onClick={handleOpenAddSupplier} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                  <Plus size={16} />
-                  <span>添加工厂</span>
-                </button>
+              <h3 className="text-xl font-semibold text-slate-800">工厂管理</h3>
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="搜索工厂或开票主体..."
+                  className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+                  value={supplierSearchTerm}
+                  onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                />
               </div>
             </div>
-            
+
             {/* Supplier List - New Layout */}
             <div className="space-y-4">
               {Object.entries(filteredGroupedSuppliersMap).map(([owner, suppliers]) => {
@@ -2759,7 +2851,7 @@ function App() {
                         
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between text-slate-600">
-                            <span>总开票(收入)</span>
+                            <span>总货款</span>
                             <span className="font-medium">¥{ownerTotalInvoiced.toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between text-slate-600">
@@ -2862,8 +2954,6 @@ function App() {
         {/* Admin View */}
         {currentView === 'admin' && (
           <div className="p-6 space-y-6">
-            <h2 className="text-xl font-bold text-slate-800">管理员设置</h2>
-            
             {/* 浮窗导航按钮 */}
             <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
               <div className="flex flex-wrap gap-3">
@@ -3540,32 +3630,24 @@ function App() {
         {/* User Invoices View */}
         {currentView === 'userInvoices' && (
           <div className="p-6 space-y-6">
-            {/* Header with title and add button */}
+            {/* Header with title and search */}
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">开票记录</h2>
-              <button onClick={() => setActiveModal('addInvoice')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                <Plus size={16} />
-                <span>新增开票</span>
-              </button>
+              <h3 className="text-xl font-semibold text-slate-800">开票记录</h3>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="搜索：店铺、工厂、开票主体或金额"
+                  value={invoiceSearchTerm}
+                  onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-80"
+                />
+              </div>
             </div>
-            
+
             {/* Search and Filter Bar */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
               <div className="flex flex-wrap items-center gap-4">
-                {/* Search Box */}
-                <div className="flex-1 min-w-[300px]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      type="text"
-                      placeholder="搜索：店铺、工厂、开票主体或金额"
-                      value={invoiceSearchTerm}
-                      onChange={(e) => setInvoiceSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                
                 {/* Date Range Filter */}
                 <div className="flex items-center gap-2">
                   <Calendar className="text-slate-400" size={18} />
@@ -3689,7 +3771,6 @@ function App() {
         {currentView === 'chat' && (
           <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">AI税务优化分析</h2>
               <button 
                 onClick={handleRunAnalysis}
                 disabled={analyzing}
