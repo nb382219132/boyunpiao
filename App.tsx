@@ -3614,7 +3614,7 @@ function App() {
                                 <span className="text-xs text-slate-500">({supplier.type === 'individual' ? '个体工商户' : supplier.type === 'company' ? '企业' : '大额个体户'})</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button className="text-sm text-blue-600 hover:text-blue-800">编辑</button>
+                                <button onClick={() => handleOpenEditEntity(supplier)} className="text-sm text-blue-600 hover:text-blue-800">编辑</button>
                                 <button onClick={() => handleDeleteEntity(supplier.id)} className="text-sm text-red-600 hover:text-red-800">删除</button>
                               </div>
                             </div>
