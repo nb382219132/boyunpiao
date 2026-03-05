@@ -3020,11 +3020,43 @@ function App() {
                                 {/* Store Names */}
                                 <div className="flex flex-wrap gap-1">
                                   {supplierStores.length > 0 ? (
-                                    supplierStores.slice(0, 2).map((store, idx) => (
-                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs rounded">
-                                        {store.storeName}
-                                      </span>
-                                    ))
+                                    supplierStores.slice(0, 2).map((store, idx) => {
+                                      // 获取该店铺和供应商关联的发票
+                                      const storeInvoices = invoices.filter(inv => 
+                                        inv.supplierId === supplier.id && inv.storeId === store.id
+                                      );
+                                      const latestInvoice = storeInvoices[storeInvoices.length - 1];
+                                      
+                                      return (
+                                        <div key={idx} className="relative group">
+                                          <span className="inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs rounded cursor-pointer">
+                                            {store.storeName}
+                                          </span>
+                                          {/* 浮窗 */}
+                                          <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-3 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                                            <div className="text-sm font-semibold text-gray-800 mb-2 pb-2 border-b border-gray-100">
+                                              {store.companyName}
+                                            </div>
+                                            {latestInvoice ? (
+                                              <div className="space-y-1">
+                                                <div className="flex justify-between text-xs">
+                                                  <span className="text-gray-500">开票时间:</span>
+                                                  <span className="text-gray-700">{latestInvoice.date}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs">
+                                                  <span className="text-gray-500">开票金额:</span>
+                                                  <span className="text-gray-700 font-medium">¥{latestInvoice.amount.toLocaleString()}</span>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="text-xs text-gray-400">暂无开票记录</div>
+                                            )}
+                                            {/* 箭头 */}
+                                            <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })
                                   ) : (
                                     <span className="text-xs text-slate-400">-</span>
                                   )}
