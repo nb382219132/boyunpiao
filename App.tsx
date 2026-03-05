@@ -2676,6 +2676,34 @@ function App() {
                   />
                 </div>
               )}
+              {/* 开票记录日期筛选 */}
+              {currentView === 'userInvoices' && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="text-slate-400" size={18} />
+                  <span className="text-sm text-slate-600">日期范围：</span>
+                  <input
+                    type="date"
+                    value={invoiceDateRange.start}
+                    onChange={(e) => setInvoiceDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-slate-400">至</span>
+                  <input
+                    type="date"
+                    value={invoiceDateRange.end}
+                    onChange={(e) => setInvoiceDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {(invoiceDateRange.start || invoiceDateRange.end) && (
+                    <button
+                      onClick={() => setInvoiceDateRange({ start: '', end: '' })}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3">
               {/* 同步状态指示器 */}
@@ -3800,42 +3828,7 @@ function App() {
         {currentView === 'userInvoices' && (
           <div className="p-6 space-y-6">
 
-            {/* Search and Filter Bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Date Range Filter */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="text-slate-400" size={18} />
-                  <span className="text-sm text-slate-600">日期范围：</span>
-                  <input
-                    type="date"
-                    value={invoiceDateRange.start}
-                    onChange={(e) => setInvoiceDateRange(prev => ({ ...prev, start: e.target.value }))}
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-slate-400">至</span>
-                  <input
-                    type="date"
-                    value={invoiceDateRange.end}
-                    onChange={(e) => setInvoiceDateRange(prev => ({ ...prev, end: e.target.value }))}
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {(invoiceDateRange.start || invoiceDateRange.end) && (
-                    <button
-                      onClick={() => setInvoiceDateRange({ start: '', end: '' })}
-                      className="text-slate-400 hover:text-slate-600"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
-                </div>
-                
-                {/* Record Count */}
-                <div className="text-sm text-slate-500">
-                  共 {filteredInvoices.length} 条记录
-                </div>
-              </div>
-            </div>
+
             
             {/* Invoice List */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
