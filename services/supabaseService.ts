@@ -1086,7 +1086,21 @@ export const restoreDataFromBackup = async (): Promise<boolean> => {
   try {
     console.log('开始从备份恢复数据到Supabase...');
     
-    // 首先尝试从localStorage迁移数据
+    // 1. 先清空 Supabase 中的所有数据（避免数据叠加）
+    console.log('清空 Supabase 中的现有数据...');
+    const client = getSupabaseClient();
+    
+    await Promise.all([
+      client.from('stores').delete().neq('id', ''),
+      client.from('suppliers').delete().neq('id', ''),
+      client.from('invoices').delete().neq('id', ''),
+      client.from('payments').delete().neq('id', ''),
+      client.from('factory_owners').delete().neq('owner_name', '')
+    ]);
+    
+    console.log('Supabase 数据已清空');
+    
+    // 2. 从 localStorage 迁移数据
     const migrateResult = await migrateDataFromLocalStorage(true);
     
     if (migrateResult) {
