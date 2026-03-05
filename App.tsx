@@ -3009,7 +3009,12 @@ function App() {
                         {/* Entities */}
                         <div className="divide-y divide-slate-100">
                           {suppliers.map(supplier => {
-                            const used = getSupplierInvoicedTotal(supplier.id);
+                            // 只统计当前季度的发票
+                            const currentQuarterInvoices = invoices.filter(inv => 
+                              inv.supplierId === supplier.id && 
+                              isCurrentOrNextQuarter(inv.date) === 'current'
+                            );
+                            const used = currentQuarterInvoices.reduce((sum, inv) => sum + inv.amount, 0);
                             const limit = supplier.limit || supplier.quarterlyLimit || 280000;
                             const percentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
                             const remaining = limit - used;
@@ -3032,7 +3037,7 @@ function App() {
                                 </div>
                                 
                                 {/* Store Names */}
-                                <div className="flex flex-wrap gap-1">
+                                <div className="flex flex-wrap gap-1" style={{ position: 'relative', zIndex: 1 }}>
                                   {supplierStores.length > 0 ? (
                                     supplierStores.slice(0, 2).map((store, idx) => {
                                       // 获取该店铺和供应商关联的发票
@@ -3042,12 +3047,12 @@ function App() {
                                       const latestInvoice = storeInvoices[storeInvoices.length - 1];
                                       
                                       return (
-                                        <div key={idx} className="relative group" style={{ zIndex: 100 }}>
+                                        <div key={idx} className="relative group" style={{ position: 'relative', zIndex: 9999 }}>
                                           <span className="inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs rounded cursor-pointer">
                                             {store.storeName}
                                           </span>
-                                          {/* 浮窗 - 改为显示在下方避免被遮挡 */}
-                                          <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200" style={{ zIndex: 9999 }}>
+                                          {/* 浮窗 - 显示在下方 */}
+                                          <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" style={{ position: 'absolute', zIndex: 99999 }}>
                                             <div className="text-sm font-semibold text-gray-800 mb-2 pb-2 border-b border-gray-100">
                                               {store.companyName}
                                             </div>
@@ -3065,7 +3070,7 @@ function App() {
                                             ) : (
                                               <div className="text-xs text-gray-400">暂无开票记录</div>
                                             )}
-                                            {/* 箭头 - 改为指向上方 */}
+                                            {/* 箭头 - 指向上方 */}
                                             <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
                                           </div>
                                         </div>
@@ -3082,7 +3087,7 @@ function App() {
                                 {/* Invoice Amount with Progress */}
                                 <div className="text-right">
                                   <div className="text-sm text-slate-600 mb-1">
-                                    已开: ¥{used.toLocaleString()} / {limit.toLocaleString()}
+                                    当前季度已开: ¥{used.toLocaleString()} / {limit.toLocaleString()}
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
