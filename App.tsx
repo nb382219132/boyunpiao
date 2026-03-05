@@ -3067,7 +3067,7 @@ function App() {
                                 {/* Store Names */}
                                 <div className="flex flex-wrap gap-1" style={{ position: 'relative', zIndex: 1 }}>
                                   {supplierStores.length > 0 ? (
-                                    supplierStores.slice(0, 2).map((store, idx) => {
+                                    supplierStores.slice(0, 6).map((store, idx) => {
                                       // 获取该店铺和供应商关联的发票
                                       const storeInvoices = invoices.filter(inv => 
                                         inv.supplierId === supplier.id && inv.storeId === store.id
@@ -3107,8 +3107,8 @@ function App() {
                                   ) : (
                                     <span className="text-xs text-slate-400">-</span>
                                   )}
-                                  {supplierStores.length > 2 && (
-                                    <span className="text-xs text-slate-400">+{supplierStores.length - 2}</span>
+                                  {supplierStores.length > 6 && (
+                                    <span className="text-xs text-slate-400">+{supplierStores.length - 6}</span>
                                   )}
                                 </div>
                                 
