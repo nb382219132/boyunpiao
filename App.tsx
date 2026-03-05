@@ -2664,7 +2664,6 @@ function App() {
                     <TrendingUp size={20} className="text-white" />
                   </div>
                 </div>
-                <p className="text-xs text-blue-100 mt-2">{currentYear}年度所有季度收入总和</p>
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
                   <h4 className="text-xs font-bold text-gray-600 uppercase mb-3 border-b border-gray-200 pb-2">店铺年度收入排行</h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
