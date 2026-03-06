@@ -732,7 +732,7 @@ function App() {
     .reduce((sum, [, data]) => {
       const quarterIncome = (data.stores || []).reduce((acc: number, s: StoreCompany) => acc + (s.quarterIncome || 0), 0);
       return sum + quarterIncome;
-    }, totalIncome); // 加上当前季度的收入
+    }, 0); // 从0开始累加所有季度的收入
 
   // 店铺发票缺口数据 - 按缺口金额排序
   const chartData = stores
