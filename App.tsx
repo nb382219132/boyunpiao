@@ -2763,7 +2763,7 @@ function App() {
               <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm p-4 text-white relative group cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-amber-100 mb-1">{currentQuarter}发票缺口</p>
+                    <p className="text-sm text-amber-100 mb-1">年度发票缺口</p>
                     <h3 className="text-2xl font-bold">¥{totalGap.toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 rounded-full p-2">
