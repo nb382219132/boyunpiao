@@ -1785,95 +1785,88 @@ function App() {
   const handleSwitchQuarter = async (quarter: string) => {
     if (quarter === currentQuarter) return;
     
-    // 1. 先加载目标季度的数据（从 Supabase 获取最新数据）
-    let targetStores: StoreCompany[] = [];
-    let targetSuppliers: SupplierEntity[] = [];
-    let targetInvoices: InvoiceRecord[] = [];
-    let targetPayments: PaymentRecord[] = [];
+    // 显示加载状态
+    setIsLoading(true);
     
     try {
-      const quarterDataFromSupabase = await fetchQuarterData();
-      if (quarterDataFromSupabase[quarter]) {
-        targetStores = quarterDataFromSupabase[quarter].stores || [];
-        targetSuppliers = quarterDataFromSupabase[quarter].suppliers || [];
-        targetInvoices = quarterDataFromSupabase[quarter].invoices || [];
-        targetPayments = quarterDataFromSupabase[quarter].payments || [];
-      }
-    } catch (error) {
-      console.error('加载目标季度数据失败:', error);
-    }
-    
-    // 2. 保存当前季度数据到 quarterData（使用当前内存中的数据）
-    const newQuarterData = {
-      ...quarterData,
-      [currentQuarter]: {
-        stores: [...stores],
-        suppliers: [...suppliers],
-        invoices: [...invoices],
-        payments: [...payments]
-      }
-    };
-    
-    // 3. 保存当前季度数据到 Supabase
-    try {
-      await Promise.all([
-        saveQuarterData(newQuarterData),
-        saveCurrentQuarter(quarter)
+      // 1. 并行加载目标季度数据和保存当前季度数据
+      const [quarterDataFromSupabase] = await Promise.all([
+        fetchQuarterData(),
+        // 保存当前季度数据到 quarterData
+        saveQuarterData({
+          ...quarterData,
+          [currentQuarter]: {
+            stores: [...stores],
+            suppliers: [...suppliers],
+            invoices: [...invoices],
+            payments: [...payments]
+          }
+        })
       ]);
-      console.log('当前季度数据已保存到 Supabase');
-    } catch (error) {
-      console.error('保存季度数据失败:', error);
-    }
-    
-    // 4. 更新本地 quarterData 状态
-    setQuarterData(newQuarterData);
-    
-    // 5. 加载目标季度数据到当前状态
-    if (targetStores.length > 0 || targetSuppliers.length > 0) {
-      // 如果目标季度有数据，使用该数据
-      setStores(targetStores);
-      setSuppliers(targetSuppliers);
-      setInvoices(targetInvoices);
-      setPayments(targetPayments);
       
-      // 同时保存到主表（用于实时同步）
-      try {
-        await Promise.all([
-          saveStores(targetStores),
-          saveSuppliers(targetSuppliers),
-          saveInvoices(targetInvoices),
-          savePayments(targetPayments)
-        ]);
-        console.log('目标季度数据已加载并保存到主表');
-      } catch (error) {
-        console.error('保存目标季度数据到主表失败:', error);
-      }
-    } else {
-      // 如果目标季度没有数据，使用基础设置但清空业务数据
-      setStores(stores.map(store => ({
-        ...store,
-        quarterIncome: 0,
-        quarterExpenses: 0
-      })));
-      setSuppliers(suppliers);
-      setInvoices([]);
-      setPayments([]);
+      // 2. 获取目标季度数据
+      const targetData = quarterDataFromSupabase[quarter];
       
-      // 清空主表
-      try {
-        await Promise.all([
-          saveStores(stores.map(store => ({ ...store, quarterIncome: 0, quarterExpenses: 0 }))),
+      // 3. 更新本地状态（先更新状态，再保存到 Supabase）
+      if (targetData && (targetData.stores?.length > 0 || targetData.suppliers?.length > 0)) {
+        // 如果目标季度有数据，使用该数据
+        setStores(targetData.stores || []);
+        setSuppliers(targetData.suppliers || []);
+        setInvoices(targetData.invoices || []);
+        setPayments(targetData.payments || []);
+        
+        // 异步保存到主表（不阻塞 UI）
+        Promise.all([
+          saveStores(targetData.stores || []),
+          saveSuppliers(targetData.suppliers || []),
+          saveInvoices(targetData.invoices || []),
+          savePayments(targetData.payments || [])
+        ]).catch(error => console.error('保存目标季度数据到主表失败:', error));
+      } else {
+        // 如果目标季度没有数据，使用基础设置但清空业务数据
+        const resetStores = stores.map(store => ({
+          ...store,
+          quarterIncome: 0,
+          quarterExpenses: 0
+        }));
+        setStores(resetStores);
+        setSuppliers(suppliers);
+        setInvoices([]);
+        setPayments([]);
+        
+        // 异步清空主表（不阻塞 UI）
+        Promise.all([
+          saveStores(resetStores),
           saveSuppliers(suppliers),
           saveInvoices([]),
           savePayments([])
-        ]);
-      } catch (error) {
-        console.error('清空主表数据失败:', error);
+        ]).catch(error => console.error('清空主表数据失败:', error));
       }
+      
+      // 4. 更新 quarterData 和当前季度
+      setQuarterData(prev => ({
+        ...prev,
+        [currentQuarter]: {
+          stores: [...stores],
+          suppliers: [...suppliers],
+          invoices: [...invoices],
+          payments: [...payments]
+        }
+      }));
+      
+      // 5. 保存当前季度到 Supabase
+      await saveCurrentQuarter(quarter);
+      
+      // 6. 切换到目标季度
+      setCurrentQuarter(quarter);
+      
+      console.log('季度切换完成:', quarter);
+    } catch (error) {
+      console.error('季度切换失败:', error);
+      alert('季度切换失败，请重试');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // 6. 切换到目标季度
-    setCurrentQuarter(quarter);
   };
 
   // Group suppliers by owner for display
