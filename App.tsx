@@ -4068,42 +4068,51 @@ function App() {
                         <table className="w-full border border-slate-200 rounded-lg">
                           <thead className="bg-slate-50">
                             <tr>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺</th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">开票公司</th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">供应商（主体）</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺-公司</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">工厂-开票主体</th>
                               <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">建议开票金额</th>
                               <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">推荐理由</th>
                               <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">操作</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200">
-                            {invoicePlan.map((item, index) => (
-                              <tr key={index} className="hover:bg-slate-50">
-                                <td className="px-4 py-3 text-sm text-slate-800">{item.storeName}</td>
-                                <td className="px-4 py-3 text-sm text-slate-600">{item.companyName}</td>
-                                <td className="px-4 py-3 text-sm text-slate-600">{item.supplierName}</td>
-                                <td className="px-4 py-3 text-sm text-slate-800 text-right font-medium">¥{item.amount.toLocaleString()}</td>
-                                <td className="px-4 py-3 text-sm text-slate-500">{item.reason}</td>
-                                <td className="px-4 py-3 text-center">
-                                  <button
-                                    onClick={() => {
-                                      setTransaction({
-                                        storeId: item.storeId,
-                                        supplierId: item.supplierId,
-                                        amount: item.amount.toString(),
-                                        date: new Date().toISOString().split('T')[0],
-                                        invoiceType: InvoiceType.NORMAL,
-                                        taxRate: 1
-                                      });
-                                      setActiveModal('addInvoice');
-                                    }}
-                                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
-                                  >
-                                    开票
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                            {invoicePlan.map((item, index) => {
+                              // 获取供应商的工厂信息
+                              const supplier = suppliers.find(s => s.id === item.supplierId);
+                              const factoryName = supplier?.owner || '未知工厂';
+                              return (
+                                <tr key={index} className="hover:bg-slate-50">
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="font-medium text-slate-800">{item.storeName}</div>
+                                    <div className="text-slate-500 text-xs">{item.companyName}</div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="font-medium text-slate-800">{factoryName}</div>
+                                    <div className="text-slate-500 text-xs">{item.supplierName}</div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-slate-800 text-right font-medium">¥{item.amount.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-sm text-slate-500">{item.reason}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <button
+                                      onClick={() => {
+                                        setTransaction({
+                                          storeId: item.storeId,
+                                          supplierId: item.supplierId,
+                                          amount: item.amount.toString(),
+                                          date: new Date().toISOString().split('T')[0],
+                                          invoiceType: InvoiceType.NORMAL,
+                                          taxRate: 1
+                                        });
+                                        setActiveModal('addInvoice');
+                                      }}
+                                      className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
+                                    >
+                                      开票
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
