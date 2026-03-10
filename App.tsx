@@ -168,7 +168,7 @@ function App() {
   const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
   const [storeSearchTerm, setStoreSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState('quarter-management');
-  const [adminActiveTab, setAdminActiveTab] = useState<'users' | 'quarters' | 'stores' | 'suppliers' | 'invoices' | 'payments'>('users');
+  const [adminActiveTab, setAdminActiveTab] = useState<'users' | 'quarters' | 'stores' | 'suppliers' | 'invoices' | 'payments'>('quarters');
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('');
   const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
   
