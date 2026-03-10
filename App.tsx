@@ -1181,11 +1181,17 @@ function App() {
         return { ...s, gap, invoiced };
       }).filter(s => s.gap > 0).sort((a, b) => b.gap - a.gap);
       
-      // 获取有剩余额度的供应商
+      // 获取有剩余额度的供应商，并计算每月可开额度
+      // 个体工商户每月最多98720元（季度不超过30万）
+      const MONTHLY_LIMIT_INDIVIDUAL = 98720;
+      
       const suppliersWithQuota = suppliers.map(s => {
         const used = getSupplierInvoicedTotal(s.id);
-        const remaining = s.quarterlyLimit - used;
-        return { ...s, remaining };
+        const quarterlyRemaining = s.quarterlyLimit - used;
+        // 对于个体工商户，限制每月额度
+        const isIndividual = s.type === 'individual' || s.type === 'small_scale';
+        const monthlyRemaining = isIndividual ? Math.min(quarterlyRemaining, MONTHLY_LIMIT_INDIVIDUAL) : quarterlyRemaining;
+        return { ...s, remaining: monthlyRemaining, quarterlyRemaining, isIndividual };
       }).filter(s => s.remaining > 0).sort((a, b) => b.remaining - a.remaining);
       
       // 为每个缺票的店铺分配供应商
@@ -1205,7 +1211,12 @@ function App() {
           
           const supplier = suppliersWithQuota.find(s => s.id === supplierId && s.remaining > 0);
           if (supplier) {
+            // 限制开票金额：不超过店铺缺口、不超过供应商月额度
             const amount = Math.min(remainingGap, supplier.remaining);
+            const reasonText = supplier.isIndividual 
+              ? `历史合作供应商（个体户），本月建议额度¥${supplier.remaining.toLocaleString()}（季度剩余¥${supplier.quarterlyRemaining.toLocaleString()}）`
+              : `历史合作供应商，剩余额度¥${supplier.remaining.toLocaleString()}`;
+            
             plan.push({
               storeId: store.id,
               storeName: store.storeName,
@@ -1213,7 +1224,7 @@ function App() {
               supplierId: supplier.id,
               supplierName: supplier.name,
               amount,
-              reason: `历史合作供应商，剩余额度¥${supplier.remaining.toLocaleString()}`
+              reason: reasonText
             });
             remainingGap -= amount;
             supplier.remaining -= amount;
@@ -1229,7 +1240,12 @@ function App() {
           const alreadyUsed = plan.some(p => p.storeId === store.id && p.supplierId === supplier.id);
           if (alreadyUsed) continue;
           
+          // 限制开票金额：不超过店铺缺口、不超过供应商月额度
           const amount = Math.min(remainingGap, supplier.remaining);
+          const reasonText = supplier.isIndividual 
+            ? `推荐供应商（个体户），本月建议额度¥${supplier.remaining.toLocaleString()}（季度剩余¥${supplier.quarterlyRemaining.toLocaleString()}）`
+            : `推荐供应商，剩余额度¥${supplier.remaining.toLocaleString()}`;
+          
           plan.push({
             storeId: store.id,
             storeName: store.storeName,
@@ -1237,7 +1253,7 @@ function App() {
             supplierId: supplier.id,
             supplierName: supplier.name,
             amount,
-            reason: `推荐供应商，剩余额度¥${supplier.remaining.toLocaleString()}`
+            reason: reasonText
           });
           remainingGap -= amount;
           supplier.remaining -= amount;
