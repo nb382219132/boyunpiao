@@ -728,11 +728,11 @@ function App() {
   // 计算年度总收入（基于当前季度所属年度）
   const currentYear = currentQuarter.substring(0, 4); // 提取年份，如 "2025"
   const annualIncome = Object.entries(quarterData)
-    .filter(([quarter]) => quarter.startsWith(currentYear)) // 筛选同一年度的季度
+    .filter(([quarter]) => quarter.startsWith(currentYear) && quarter !== currentQuarter) // 筛选同一年度的其他季度（排除当前季度）
     .reduce((sum, [, data]) => {
       const quarterIncome = (data.stores || []).reduce((acc: number, s: StoreCompany) => acc + (s.quarterIncome || 0), 0);
       return sum + quarterIncome;
-    }, 0); // 从0开始累加所有季度的收入
+    }, totalIncome); // 以当前季度收入为初始值，加上其他季度的收入
 
   // 店铺发票缺口数据 - 按缺口金额排序
   const chartData = stores
