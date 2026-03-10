@@ -2385,10 +2385,8 @@ function App() {
                                       ) : (
                                           <button 
                                               onClick={() => {
-                                                  if (confirm(`确定要切换到 ${quarter} 的数据吗？\n\n当前未保存的数据将会丢失。`)) {
-                                                      handleSwitchQuarter(quarter);
-                                                      setActiveModal(null);
-                                                  }
+                                                  handleSwitchQuarter(quarter);
+                                                  setActiveModal(null);
                                               }}
                                               className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs rounded hover:bg-indigo-200"
                                           >
