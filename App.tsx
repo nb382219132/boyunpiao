@@ -152,6 +152,9 @@ function App() {
     amount: number;
     reason: string;
   }> | null>(null);
+  
+  // 开票模式：'monthly' 按月开票，'quarterly' 按季度开票
+  const [invoiceMode, setInvoiceMode] = useState<'monthly' | 'quarterly'>('monthly');
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
   const [expenseForm, setExpenseForm] = useState({
     shipping: '', promotion: '', salaries: '', rent: '', office: '', fuel: '', other: ''
@@ -1181,17 +1184,26 @@ function App() {
         return { ...s, gap, invoiced };
       }).filter(s => s.gap > 0).sort((a, b) => b.gap - a.gap);
       
-      // 获取有剩余额度的供应商，并计算每月可开额度
+      // 根据开票模式计算额度
       // 个体工商户每月最多98720元（季度不超过30万）
       const MONTHLY_LIMIT_INDIVIDUAL = 98720;
       
       const suppliersWithQuota = suppliers.map(s => {
         const used = getSupplierInvoicedTotal(s.id);
         const quarterlyRemaining = s.quarterlyLimit - used;
-        // 对于个体工商户，限制每月额度
         const isIndividual = s.type === 'individual' || s.type === 'small_scale';
-        const monthlyRemaining = isIndividual ? Math.min(quarterlyRemaining, MONTHLY_LIMIT_INDIVIDUAL) : quarterlyRemaining;
-        return { ...s, remaining: monthlyRemaining, quarterlyRemaining, isIndividual };
+        
+        // 根据开票模式计算可用额度
+        let availableRemaining: number;
+        if (invoiceMode === 'monthly') {
+          // 按月开票：个体户每月最多98720
+          availableRemaining = isIndividual ? Math.min(quarterlyRemaining, MONTHLY_LIMIT_INDIVIDUAL) : quarterlyRemaining;
+        } else {
+          // 按季度开票：使用全部季度额度
+          availableRemaining = quarterlyRemaining;
+        }
+        
+        return { ...s, remaining: availableRemaining, quarterlyRemaining, isIndividual };
       }).filter(s => s.remaining > 0).sort((a, b) => b.remaining - a.remaining);
       
       // 为每个缺票的店铺分配供应商
@@ -1211,11 +1223,12 @@ function App() {
           
           const supplier = suppliersWithQuota.find(s => s.id === supplierId && s.remaining > 0);
           if (supplier) {
-            // 限制开票金额：不超过店铺缺口、不超过供应商月额度
+            // 限制开票金额：不超过店铺缺口、不超过供应商可用额度
             const amount = Math.min(remainingGap, supplier.remaining);
+            const modeText = invoiceMode === 'monthly' ? '本月' : '本季度';
             const reasonText = supplier.isIndividual 
-              ? `历史合作供应商（个体户），本月建议额度¥${supplier.remaining.toLocaleString()}（季度剩余¥${supplier.quarterlyRemaining.toLocaleString()}）`
-              : `历史合作供应商，剩余额度¥${supplier.remaining.toLocaleString()}`;
+              ? `历史合作供应商（个体户），${modeText}建议额度¥${supplier.remaining.toLocaleString()}（季度剩余¥${supplier.quarterlyRemaining.toLocaleString()}）`
+              : `历史合作供应商，${modeText}剩余额度¥${supplier.remaining.toLocaleString()}`;
             
             plan.push({
               storeId: store.id,
@@ -1240,11 +1253,12 @@ function App() {
           const alreadyUsed = plan.some(p => p.storeId === store.id && p.supplierId === supplier.id);
           if (alreadyUsed) continue;
           
-          // 限制开票金额：不超过店铺缺口、不超过供应商月额度
+          // 限制开票金额：不超过店铺缺口、不超过供应商可用额度
           const amount = Math.min(remainingGap, supplier.remaining);
+          const modeText = invoiceMode === 'monthly' ? '本月' : '本季度';
           const reasonText = supplier.isIndividual 
-            ? `推荐供应商（个体户），本月建议额度¥${supplier.remaining.toLocaleString()}（季度剩余¥${supplier.quarterlyRemaining.toLocaleString()}）`
-            : `推荐供应商，剩余额度¥${supplier.remaining.toLocaleString()}`;
+            ? `推荐供应商（个体户），${modeText}建议额度¥${supplier.remaining.toLocaleString()}（季度剩余¥${supplier.quarterlyRemaining.toLocaleString()}）`
+            : `推荐供应商，${modeText}剩余额度¥${supplier.remaining.toLocaleString()}`;
           
           plan.push({
             storeId: store.id,
@@ -4040,14 +4054,40 @@ function App() {
         {currentView === 'chat' && (
           <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
-              <button 
-                onClick={handleRunAnalysis}
-                disabled={analyzing}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {analyzing && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>}
-                <span>{analyzing ? '分析中...' : '运行分析'}</span>
-              </button>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={handleRunAnalysis}
+                  disabled={analyzing}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {analyzing && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>}
+                  <span>{analyzing ? '分析中...' : '运行分析'}</span>
+                </button>
+                
+                {/* 开票模式切换 */}
+                <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setInvoiceMode('monthly')}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      invoiceMode === 'monthly' 
+                        ? 'bg-white text-indigo-600 shadow-sm' 
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    按月开票
+                  </button>
+                  <button
+                    onClick={() => setInvoiceMode('quarterly')}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      invoiceMode === 'quarterly' 
+                        ? 'bg-white text-indigo-600 shadow-sm' 
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    按季度开票
+                  </button>
+                </div>
+              </div>
             </div>
             
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 min-h-[600px]">
