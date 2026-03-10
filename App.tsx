@@ -141,6 +141,17 @@ function App() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  
+  // 开票计划状态
+  const [invoicePlan, setInvoicePlan] = useState<Array<{
+    storeId: string;
+    storeName: string;
+    companyName: string;
+    supplierId: string;
+    supplierName: string;
+    amount: number;
+    reason: string;
+  }> | null>(null);
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
   const [expenseForm, setExpenseForm] = useState({
     shipping: '', promotion: '', salaries: '', rent: '', office: '', fuel: '', other: ''
@@ -1150,10 +1161,99 @@ function App() {
 
   const handleRunAnalysis = async () => {
     setAnalyzing(true);
+    
+    // 生成智能开票计划
+    const generateInvoicePlan = () => {
+      const plan: Array<{
+        storeId: string;
+        storeName: string;
+        companyName: string;
+        supplierId: string;
+        supplierName: string;
+        amount: number;
+        reason: string;
+      }> = [];
+      
+      // 获取有缺票的店铺
+      const storesWithGap = stores.map(s => {
+        const invoiced = getStoreInvoicedTotal(s.id);
+        const gap = Math.max(0, s.quarterIncome - s.quarterExpenses - invoiced);
+        return { ...s, gap, invoiced };
+      }).filter(s => s.gap > 0).sort((a, b) => b.gap - a.gap);
+      
+      // 获取有剩余额度的供应商
+      const suppliersWithQuota = suppliers.map(s => {
+        const used = getSupplierInvoicedTotal(s.id);
+        const remaining = s.quarterlyLimit - used;
+        return { ...s, remaining };
+      }).filter(s => s.remaining > 0).sort((a, b) => b.remaining - a.remaining);
+      
+      // 为每个缺票的店铺分配供应商
+      for (const store of storesWithGap) {
+        let remainingGap = store.gap;
+        
+        // 优先找历史合作过的供应商
+        const historicalSupplierIds = new Set(
+          invoices
+            .filter(i => i.storeId === store.id)
+            .map(i => i.supplierId)
+        );
+        
+        // 先尝试历史供应商
+        for (const supplierId of historicalSupplierIds) {
+          if (remainingGap <= 0) break;
+          
+          const supplier = suppliersWithQuota.find(s => s.id === supplierId && s.remaining > 0);
+          if (supplier) {
+            const amount = Math.min(remainingGap, supplier.remaining);
+            plan.push({
+              storeId: store.id,
+              storeName: store.storeName,
+              companyName: store.companyName,
+              supplierId: supplier.id,
+              supplierName: supplier.name,
+              amount,
+              reason: `历史合作供应商，剩余额度¥${supplier.remaining.toLocaleString()}`
+            });
+            remainingGap -= amount;
+            supplier.remaining -= amount;
+          }
+        }
+        
+        // 如果还有缺口，找其他有额度的供应商
+        for (const supplier of suppliersWithQuota) {
+          if (remainingGap <= 0) break;
+          if (supplier.remaining <= 0) continue;
+          
+          // 检查是否已经在计划中使用过这个供应商-店铺组合
+          const alreadyUsed = plan.some(p => p.storeId === store.id && p.supplierId === supplier.id);
+          if (alreadyUsed) continue;
+          
+          const amount = Math.min(remainingGap, supplier.remaining);
+          plan.push({
+            storeId: store.id,
+            storeName: store.storeName,
+            companyName: store.companyName,
+            supplierId: supplier.id,
+            supplierName: supplier.name,
+            amount,
+            reason: `推荐供应商，剩余额度¥${supplier.remaining.toLocaleString()}`
+          });
+          remainingGap -= amount;
+          supplier.remaining -= amount;
+        }
+      }
+      
+      return plan;
+    };
+    
+    // 生成开票计划
+    const plan = generateInvoicePlan();
+    setInvoicePlan(plan);
+    
     // Prepare view models for AI
     const storeAnalysisData = stores.map(s => {
       const invoiced = getStoreInvoicedTotal(s.id);
-      // 获取该店铺的历史供应商
       const historicalSuppliers = Array.from(new Set(
         invoices.filter(i => i.storeId === s.id).map(i => {
           const supplier = suppliers.find(sup => sup.id === i.supplierId);
@@ -1182,7 +1282,6 @@ function App() {
 
     const result = await analyzeTaxOptimization(storeAnalysisData, supplierAnalysisData);
     setAiAnalysis(result || "分析生成失败。");
-    // 保存分析结果到历史记录
     setAnalysisResults(prev => [
       { timestamp: new Date(), result: result || "分析生成失败。" },
       ...prev
@@ -3939,14 +4038,83 @@ function App() {
             
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 min-h-[600px]">
               {aiAnalysis ? (
-                <div className="prose max-w-none">
-                  <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                <div className="space-y-6">
+                  <div className="prose max-w-none">
+                    <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                  </div>
+                  
+                  {/* 开票计划表格 */}
+                  {invoicePlan && invoicePlan.length > 0 && (
+                    <div className="mt-8">
+                      <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <FileText size={20} className="text-indigo-600" />
+                        智能开票计划
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-slate-200 rounded-lg">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">店铺</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">开票公司</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">供应商（主体）</th>
+                              <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">建议开票金额</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">推荐理由</th>
+                              <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {invoicePlan.map((item, index) => (
+                              <tr key={index} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 text-sm text-slate-800">{item.storeName}</td>
+                                <td className="px-4 py-3 text-sm text-slate-600">{item.companyName}</td>
+                                <td className="px-4 py-3 text-sm text-slate-600">{item.supplierName}</td>
+                                <td className="px-4 py-3 text-sm text-slate-800 text-right font-medium">¥{item.amount.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-sm text-slate-500">{item.reason}</td>
+                                <td className="px-4 py-3 text-center">
+                                  <button
+                                    onClick={() => {
+                                      setTransaction({
+                                        storeId: item.storeId,
+                                        supplierId: item.supplierId,
+                                        amount: item.amount.toString(),
+                                        date: new Date().toISOString().split('T')[0],
+                                        invoiceType: InvoiceType.NORMAL,
+                                        taxRate: 1
+                                      });
+                                      setActiveModal('addInvoice');
+                                    }}
+                                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
+                                  >
+                                    开票
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-4 flex justify-between items-center">
+                        <p className="text-sm text-slate-500">
+                          共 {invoicePlan.length} 条开票建议，总金额 ¥{invoicePlan.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
+                        </p>
+                        <button
+                          onClick={() => {
+                            // 批量开票的逻辑（可以逐个执行）
+                            alert('批量开票功能开发中，请使用单个开票按钮');
+                          }}
+                          className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                        >
+                          批量执行开票
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400">
                   <Bot size={64} className="mb-4 opacity-50" />
                   <p className="text-lg mb-2">AI税务优化分析</p>
-                  <p className="text-sm text-center max-w-md">点击上方"运行分析"按钮，AI将根据您的店铺数据和开票情况，为您提供税务优化建议</p>
+                  <p className="text-sm text-center max-w-md">点击上方"运行分析"按钮，AI将根据您的店铺数据和开票情况，为您提供税务优化建议和开票计划</p>
                 </div>
               )}
             </div>
